@@ -1,4 +1,6 @@
-# Status de implementação — 0.2.0-preview
+# Status de implementação — 0.2.1-preview
+
+Correção 0.2.1: permissões dos diretórios ancestrais do painel, configuração privada independente para phpMyAdmin e preservação da senha inicial imediatamente após criar o administrador. Instalação e atualização são testadas pelo mesmo `install.sh` distribuído, incluindo diretórios preexistentes com acesso restrito.
 
 Esta é uma versão de desenvolvimento instalável, não a conclusão integral da plataforma comercial solicitada. A especificação original continua sendo a meta. Não há módulos simulados reportando execução real.
 

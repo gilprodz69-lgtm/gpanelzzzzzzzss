@@ -42,6 +42,8 @@ install -d -m 0755 "$release_dir"
 rsync -a --exclude=.env --exclude=storage --exclude=.tools --exclude=node_modules --exclude=dist --exclude=.git "$project_dir/" "$release_dir/"
 find "$release_dir" -type d -exec chmod 0755 {} +
 find "$release_dir" -type f -exec chmod 0644 {} +
+runuser -u vpsmanager -- test -r "$release_dir/scripts/console.php"
+runuser -u www-data -- test -r "$release_dir/public/index.php"
 ln -s /opt/vpsmanager/shared/storage "$release_dir/storage"
 ln -s /opt/vpsmanager/shared/.env "$release_dir/.env"
 find "$release_dir/app" "$release_dir/public" "$release_dir/database" -name '*.php' -print0 | xargs -0 -n1 php8.3 -l >/dev/null

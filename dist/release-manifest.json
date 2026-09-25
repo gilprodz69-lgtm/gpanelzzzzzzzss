@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-preview",
+  "version": "0.2.1-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "8473a5650daa3ca1ca310bc8375300c5c5e4cad88faeb2224cbcecf9f60fee7f"
+      "sha256": "f0fa4bcbb6bcc60f7b4606521c4ff94842e910add0d94b1a0f5c7db319c0f668"
     },
     {
       "path": "agent/files.py",
@@ -263,8 +263,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 4888,
-      "sha256": "ad3e18f93e395cfbac53b278f7a6628a3774415d8c7df775e0d370392f74b854"
+      "bytes": 5223,
+      "sha256": "4b0a198329daa9de126b38047f11669e992790a9a0bc8323a511eda6b664bb80"
     },
     {
       "path": "public/css/app.css",
@@ -338,13 +338,13 @@
     },
     {
       "path": "scripts/install-runtime.sh",
-      "bytes": 3134,
-      "sha256": "0b2077ea979a759a446f767d71c237edb5926de6771391af5ac6e7506ce4d7b7"
+      "bytes": 3786,
+      "sha256": "1d774945bfd8f9c71e024452aa56bcfd3159cb3a7196dad3536929a6771f312b"
     },
     {
       "path": "scripts/install-ubuntu.sh",
-      "bytes": 10844,
-      "sha256": "29b7532ec252eae6a247fb04b68e4e3a635b5cdc339ee87a8034c6a73a9e1eec"
+      "bytes": 11159,
+      "sha256": "0de64fd6381828056d33fe10fb91ebe0d78e6593860882be469bac412a6907ab"
     },
     {
       "path": "scripts/panel-certificate.py",
@@ -368,8 +368,8 @@
     },
     {
       "path": "scripts/upgrade-ubuntu.sh",
-      "bytes": 6148,
-      "sha256": "358fd39e7409873070f89a9a069f3c3fc394ceddb151d59d765287374457d56d"
+      "bytes": 6279,
+      "sha256": "36831b64789ca839232127397479f129be9a7ab46e60b28d7ea42d811905d661"
     },
     {
       "path": "scripts/wait-agent.py",

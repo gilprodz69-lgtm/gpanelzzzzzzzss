@@ -69,6 +69,8 @@ install -d -o vpsmanager -g vpsmanager -m 0750 /opt/vpsmanager/shared/storage /o
 rsync -a --exclude=.tools --exclude=.env --exclude=.git --exclude=node_modules --exclude=test-results --exclude=storage --exclude=dist "$project_dir/" "$release_dir/"
 find "$release_dir" -type d -exec chmod 0755 {} +
 find "$release_dir" -type f -exec chmod 0644 {} +
+runuser -u vpsmanager -- test -r "$release_dir/scripts/console.php"
+runuser -u www-data -- test -r "$release_dir/public/index.php"
 ln -s /opt/vpsmanager/shared/storage "$release_dir/storage"
 database_password=$(openssl rand -hex 32)
 app_key=$(php8.3 "$release_dir/scripts/console.php" key:generate)
@@ -96,6 +98,13 @@ CREATE USER 'vpsmanager'@'127.0.0.1' IDENTIFIED BY '$database_password';
 GRANT ALL ON vpsmanager.* TO 'vpsmanager'@'127.0.0.1';
 SQL
 php8.3 "$release_dir/scripts/console.php" install
+# Preserve the generated password even if a later service or certificate check fails.
+(
+    umask 077
+    printf 'URL: https://%s:%s\nE-mail: %s\nSenha inicial: %s\n' "$PANEL_HOST" "$PANEL_PORT" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" > /root/vpsmanager-access.txt
+    chmod 0600 /root/vpsmanager-access.txt
+)
+echo 'Credenciais iniciais salvas em /root/vpsmanager-access.txt (somente root).'
 openssl rand -hex 32 > /etc/vpsmanager/agent.secret
 chmod 0600 /etc/vpsmanager/agent.secret
 php8.3 "$release_dir/scripts/register-local-server.php"
@@ -197,9 +206,6 @@ sleep 2
 systemctl is-active --quiet nginx php8.3-fpm mariadb vpsmanager-agent vpsmanager-worker
 runuser -u vpsmanager -- php8.3 "$release_dir/scripts/console.php" metrics
 runuser -u vpsmanager -- php8.3 "$release_dir/scripts/health.php"
-umask 077
-printf 'URL: https://%s:%s\nE-mail: %s\nSenha inicial: %s\n' "$PANEL_HOST" "$PANEL_PORT" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" > /root/vpsmanager-access.txt
-chmod 0600 /root/vpsmanager-access.txt
 if ( : > /dev/tty ) 2>/dev/null; then
     printf '\nVPS Manager instalado!\nAcesse: https://%s:%s\nE-mail: %s\nSenha inicial: %s\n\n' "$PANEL_HOST" "$PANEL_PORT" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" > /dev/tty
 fi

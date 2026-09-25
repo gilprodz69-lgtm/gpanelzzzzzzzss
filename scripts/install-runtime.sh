@@ -15,6 +15,9 @@ apt-get install -y "${packages[@]}"
 for version in 7.4 8.0 8.1 8.2 8.3 8.4; do
     systemctl enable --now "php${version}-fpm"
 done
+# venv creates missing parents with the caller's umask (027 in the installer).
+# Set every shared ancestor explicitly so PHP-FPM, nginx and the worker can traverse it.
+install -d -o root -g root -m 0755 /opt/vpsmanager /opt/vpsmanager/releases /opt/vpsmanager/shared
 python3 -m venv /opt/vpsmanager/acme
 /opt/vpsmanager/acme/bin/pip install --disable-pip-version-check 'certbot>=5.4,<6'
 echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect' | debconf-set-selections
@@ -22,13 +25,22 @@ echo 'phpmyadmin phpmyadmin/dbconfig-install boolean false' | debconf-set-select
 apt-get install -y --no-install-recommends phpmyadmin
 id vpm-pma >/dev/null 2>&1 || useradd --system --user-group --no-create-home --shell /usr/sbin/nologin vpm-pma
 install -d -o vpm-pma -g vpm-pma -m 0700 /var/lib/vpsmanager-pma
-install -d -m 0755 /var/lib/vpsmanager-acme /etc/vpsmanager
-if [[ ! -f /etc/vpsmanager/phpmyadmin-secret ]]; then openssl rand -hex 16 > /etc/vpsmanager/phpmyadmin-secret; fi
-chown root:vpm-pma /etc/vpsmanager/phpmyadmin-secret
-chmod 0640 /etc/vpsmanager/phpmyadmin-secret
+install -d -m 0755 /var/lib/vpsmanager-acme
+install -d -o root -g root -m 0700 /etc/vpsmanager
+# phpMyAdmin must not need access to the agent's private configuration directory.
+install -d -o root -g vpm-pma -m 0750 /etc/vpsmanager-phpmyadmin
+if [[ ! -f /etc/vpsmanager-phpmyadmin/secret ]]; then
+    if [[ -f /etc/vpsmanager/phpmyadmin-secret ]]; then
+        install -o root -g vpm-pma -m 0640 /etc/vpsmanager/phpmyadmin-secret /etc/vpsmanager-phpmyadmin/secret
+    else
+        (umask 077; openssl rand -hex 16 > /etc/vpsmanager-phpmyadmin/secret)
+    fi
+fi
+chown root:vpm-pma /etc/vpsmanager-phpmyadmin/secret
+chmod 0640 /etc/vpsmanager-phpmyadmin/secret
 cat > /etc/phpmyadmin/config.inc.php <<'PHP'
 <?php
-$cfg['blowfish_secret'] = trim(file_get_contents('/etc/vpsmanager/phpmyadmin-secret'));
+$cfg['blowfish_secret'] = trim(file_get_contents('/etc/vpsmanager-phpmyadmin/secret'));
 $cfg['Servers'][1]['auth_type'] = 'cookie';
 $cfg['Servers'][1]['host'] = 'localhost';
 $cfg['Servers'][1]['AllowNoPassword'] = false;
