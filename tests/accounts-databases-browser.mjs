@@ -1,0 +1,36 @@
+import {chromium} from 'playwright';
+import {readFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:1536,height:960}});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+let role='MASTER';const calls=[],now=Math.floor(Date.now()/1000);
+const reseller={id:880,name:'Revenda Teste',email:'revenda@example.test',role:'RESELLER',status:'active',plan_id:1,created_at:now,expires_at:now+30*86400,expired:false};
+await page.route('**/api/v1/auth/me',async route=>{const response=await route.fetch(),data=await response.json();if(response.ok()){data.user.role=role;data.servers=[{id:1,name:'Servidor privado'}];}await route.fulfill({response,json:data});});
+await page.route('**/api/v1/users',async route=>{if(route.request().method()==='POST'){calls.push(['create',route.request().postDataJSON()]);await route.fulfill({json:{id:880,message:'Conta criada.'}});}else await route.fulfill({json:{data:[reseller]}});});
+await page.route('**/api/v1/users/880',async route=>{if(route.request().method()==='PATCH'){calls.push(['update',route.request().postDataJSON()]);await route.fulfill({json:{message:'Conta atualizada.'}});}else await route.fulfill({json:{user:reseller,plan_name:'Essencial',clients:3,permissions:[],available_permissions:[]}});});
+const password=(await readFile('storage/LOCAL-ACCESS.txt','utf8')).match(/Senha: (.+)/)[1].trim();
+await page.goto('http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
+await page.locator('nav a[data-route=resellers]').click();await page.locator('[data-create=resellers]').click();
+assert.equal(await page.locator('[name=validity_days]').inputValue(),'30');
+await page.locator('[name=validity_days]').fill('75');await page.getByLabel('Nome completo',{exact:true}).fill('Nova Revenda');await page.locator('dialog [name=email]').fill('nova@example.test');await page.locator('dialog [name=password]').fill('BrowserOnly_123456');
+await page.screenshot({path:'test-results/reseller-validity.png',fullPage:true});
+await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});assert.equal(calls[0][1].validity_days,75);
+await page.locator('[data-user-details="880"]').click();await page.getByText('Essencial',{exact:true}).waitFor();await page.getByRole('button',{name:'Fechar',exact:true}).click();
+await page.locator('[data-renew-user="880"]').click();await page.locator('[name=renew_days]').fill('47');await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});assert.deepEqual(calls.at(-1),['update',{renew_days:47}]);
+await page.locator('[data-user-password="880"]').click();await page.locator('dialog [name=password]').fill('ChangedOnly_123456');await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});assert.equal(calls.at(-1)[1].password,'ChangedOnly_123456');
+await page.locator('[data-edit-user="880"]').click();await page.locator('[name=validity_days]').fill('90');await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});assert.equal(calls.at(-1)[1].validity_days,90);
+await page.screenshot({path:'test-results/reseller-actions.png',fullPage:true});
+const db={id:800,name:'u1_shop',server_id:1,owner_id:880,status:'active',created_at:now,config:{name:'u1_shop',username:'u1_login'}};
+await page.route('**/api/v1/databases',async route=>{if(route.request().method()==='POST'){calls.push(['database',route.request().postDataJSON()]);await route.fulfill({json:{id:800,message:'Operação adicionada à fila.'}});}else await route.fulfill({json:{data:[db]}});});
+await page.route('**/api/v1/databases/800/access',route=>route.fulfill({json:{name:db.name,username:'u1_login',host:'localhost',port:3306,status:'active',created_at:now,charset:'utf8mb4',collation:'utf8mb4_unicode_ci',tables:5,size_bytes:1048576,phpmyadmin_url:'https://panel.example.test/phpmyadmin/',...(role!=='CLIENT'?{server:'Servidor privado'}:{})}}));
+await page.locator('nav a[data-route=databases]').click();await page.locator('[data-database="800"]').click();await page.getByText('u1_login',{exact:true}).waitFor();await page.getByText('utf8mb4_unicode_ci',{exact:true}).waitFor();await page.getByText('1 MB',{exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'Abrir phpMyAdmin'}).getAttribute('href'),'https://panel.example.test/phpmyadmin/');
+await page.screenshot({path:'test-results/database-details.png',fullPage:true});await page.getByRole('button',{name:'Fechar',exact:true}).click();
+for(const testRole of ['MASTER','RESELLER','CLIENT']){
+ role=testRole;await page.reload();await page.locator('[data-create=databases]').waitFor();
+ assert.equal(await page.getByRole('columnheader',{name:'Servidor',exact:true}).count(),role==='CLIENT'?0:1);
+ await page.locator('[data-create=databases]').click();await page.locator('dialog [name=username]').waitFor();assert.equal(await page.locator('dialog [name=server_id]').count(),role==='CLIENT'?0:1);
+ await page.getByLabel('Nome do banco',{exact:true}).fill('shop');await page.getByLabel('Usuário do banco',{exact:true}).fill('login');await page.getByLabel('Senha do banco',{exact:true}).fill('DatabaseOnly_123456');
+ await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});
+ assert.equal(calls.at(-1)[1].username,'login');assert.equal(calls.at(-1)[1].name,'shop');if(role==='CLIENT')assert.equal('server_id' in calls.at(-1)[1],false);
+}
+assert.deepEqual(errors,[]);await browser.close();console.log('PASS reseller validity, account actions, independent database credentials, full details and server visibility by role');

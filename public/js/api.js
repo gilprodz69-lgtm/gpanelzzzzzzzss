@@ -11,5 +11,5 @@ export const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<
 export const number=n=>new Intl.NumberFormat('pt-BR').format(n??0);
 export const date=timestamp=>timestamp?new Date(timestamp*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
 export const relative=t=>{const s=Math.max(0,Math.floor(Date.now()/1000-t));return s<60?'agora':s<3600?`${Math.floor(s/60)} min atrás`:s<86400?`${Math.floor(s/3600)} h atrás`:`${Math.floor(s/86400)} dias atrás`;};
-const statuses={online:'Online',active:'Ativo',completed:'Concluído',pending:'Pendente',running:'Executando',deleting:'Excluindo',failed:'Falhou',offline:'Offline',unknown:'Aguardando',suspended:'Suspenso'};
+const statuses={expired:'Validade encerrada',online:'Online',active:'Ativo',completed:'Concluído',pending:'Pendente',running:'Executando',deleting:'Excluindo',failed:'Falhou',offline:'Offline',unknown:'Aguardando',suspended:'Suspenso'};
 export const badge=status=>`<span class="badge ${Object.hasOwn(statuses,status)?status:'unknown'}"><i class="dot ${['online','active','completed'].includes(status)?'':status==='offline'?'offline':'unknown'}"></i>${esc(statuses[status]||status)}</span>`;

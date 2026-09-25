@@ -1,5 +1,5 @@
 {
-  "version": "0.2.4-preview",
+  "version": "0.2.5-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "9ef96872bbdcd0c907cc14cca6325b6764c921e58b9685d5b83735afbd14f81a"
+      "sha256": "487060bfa5d3e22304b1135fd466db12fb72e1949d2b2122cd8c721a55cd6f20"
     },
     {
       "path": "agent/files.py",
@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 25162,
-      "sha256": "63f71b5edadda85578046ec6390b3cb6ae61dbdd216f042670f6d27fa470475b"
+      "bytes": 26514,
+      "sha256": "54470e2aa3da26264063ee58292ffa104ba22e0418e858dce93bf4b3eea618ad"
     },
     {
       "path": "agent/runtime.py",
@@ -53,8 +53,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 19351,
-      "sha256": "7d6a9e4a64422793c6149406df09d8c030766811cb4747e43385fb104db3a0ba"
+      "bytes": 20136,
+      "sha256": "4d4396590dd13bc670dfe507135f0975fe33b107325a0403ec8e7a46cea573a0"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -68,13 +68,13 @@
     },
     {
       "path": "app/Middleware/Policy.php",
-      "bytes": 2851,
-      "sha256": "1368233af80b25b412090fa94342cb9eeb58a26f52c1d0f7044f18a220a83cb9"
+      "bytes": 2909,
+      "sha256": "3eb2697530fd7177521dd30c2e88d87c58c1c8b036e73129ec6e261e8d5f5850"
     },
     {
       "path": "app/Models/Catalog.php",
-      "bytes": 2556,
-      "sha256": "97c154833c29af71d0e62da99bf19598a1766e3a3083a21488c3086f7c458ff8"
+      "bytes": 2567,
+      "sha256": "47618edba84bcc140c7cdb4b3d720c6e0bc01f453aadb70b2c0242ebb352a874"
     },
     {
       "path": "app/Models/PhpVersions.php",
@@ -88,8 +88,13 @@
     },
     {
       "path": "app/Services/AccountService.php",
-      "bytes": 8173,
-      "sha256": "4bd170eda43c1c65fb2f60b6396d6610fb20e84d5fb9890b83d58ea8cc2fcde5"
+      "bytes": 9857,
+      "sha256": "ea4a6474834b8374f19ec4fde43361f1bf6f56067a848a8ea5d79876ab9cdb29"
+    },
+    {
+      "path": "app/Services/AccountValidity.php",
+      "bytes": 721,
+      "sha256": "c5cf346cd5486a228ef5175af6a39fcfd281e4aa2a44638c750c77bc8aea90c4"
     },
     {
       "path": "app/Services/AgentClient.php",
@@ -103,8 +108,8 @@
     },
     {
       "path": "app/Services/Auth.php",
-      "bytes": 5663,
-      "sha256": "5fe832be6e9bf1b4e89ad9cc151d889e3a7a581849e3b15163c1e67c81678afd"
+      "bytes": 5841,
+      "sha256": "5d47a9ca49924ff49777375c051eb9b75e6c068c15d133ecf0bde6dbd7b2bb83"
     },
     {
       "path": "app/Services/BackupScheduler.php",
@@ -133,8 +138,8 @@
     },
     {
       "path": "app/Services/ResourceService.php",
-      "bytes": 8885,
-      "sha256": "e3e9c8597a5c2d326de00c133aae6043b3fe0e0907a4b812dd36104f769c63f9"
+      "bytes": 10162,
+      "sha256": "c57457b823d41e4738bb4433fef4f5dc895d66cef67adb4fe484c23727921c4d"
     },
     {
       "path": "app/Services/ServerService.php",
@@ -190,6 +195,11 @@
       "path": "database/migrations/003_monitoring.php",
       "bytes": 711,
       "sha256": "d34a75f774bee60a51451451ffa4ac07e1879420f2226e0ecaa9f120304b8cf0"
+    },
+    {
+      "path": "database/migrations/004_account_validity.php",
+      "bytes": 469,
+      "sha256": "26defac86176a5195c18bd524a3c30d00173e790771facc7905a9946cb8ecfa5"
     },
     {
       "path": "deploy/Dockerfile",
@@ -302,6 +312,11 @@
       "sha256": "d876d8ef9ec1d03bfb63479c4abcb33d323eb5cbea7ee5f22d076196da06acd4"
     },
     {
+      "path": "public/css/management.css",
+      "bytes": 540,
+      "sha256": "76930ca702eb16e321e7dc4efcef38e91ebcf289f63d196074556db37b3a6753"
+    },
+    {
       "path": "public/images/logo.svg",
       "bytes": 375,
       "sha256": "92317d0de2a489e78a726f76eed181757ae1a147e3180acdef579fbd9159fa97"
@@ -313,13 +328,13 @@
     },
     {
       "path": "public/js/api.js",
-      "bytes": 1813,
-      "sha256": "a0e04dc9f3054b1c8f110839b77158a314bfb78e13e99d271e8ecace09c154d9"
+      "bytes": 1842,
+      "sha256": "7f0456c37526bbe6ccc0584551cca8a94c2d07ddc9eeef09e7e4bbbdc9e37f31"
     },
     {
       "path": "public/js/app.js",
-      "bytes": 41638,
-      "sha256": "52e8fd9d6cee75f821b9808e4dffde16fbafdcdeb253bcfec38f29e93fb7414e"
+      "bytes": 43220,
+      "sha256": "d51a736dfc1d507927de6e3a3b20308153c7c3c57a37c6cc1ee32eb281888162"
     },
     {
       "path": "public/js/cron-schedule.js",
@@ -343,13 +358,18 @@
     },
     {
       "path": "public/js/forms.js",
-      "bytes": 7338,
-      "sha256": "e2d3340d9f6b75c2eaea721134ebbd90c8e0ec446424605a641789898d74aa43"
+      "bytes": 8678,
+      "sha256": "e4f1762020b2ec0144f02560ed6eee7b31fbdfff3e8e1ba2a7dee91a7a00e29e"
     },
     {
       "path": "public/js/icons.js",
       "bytes": 5060,
       "sha256": "c2e90ccc600947a54ebde13426bea016884d7aa4e0d9d366514e893df65f02e2"
+    },
+    {
+      "path": "public/js/management-ui.js",
+      "bytes": 2833,
+      "sha256": "8e4e095aa43acc4ebbafc11f2354410241cfeaf1c117f1d2ece60750348cd214"
     },
     {
       "path": "public/router.php",
@@ -463,8 +483,8 @@
     },
     {
       "path": "resources/views/app.php",
-      "bytes": 915,
-      "sha256": "e66654f24ffa0e737985628c0fc46b376ea239fdf74004d6fff4de0ab3b3dc18"
+      "bytes": 968,
+      "sha256": "1945282d4e160ae7c45f798b2e3cc40eb6adc197ee77c4295dccea41c46ca81d"
     },
     {
       "path": "scripts/console.php",

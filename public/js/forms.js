@@ -15,6 +15,7 @@ export async function creationForm(kind,ctx){
   title=kind==='resellers'?'Criar Revendedor':kind==='clients'?'Criar Cliente':'Criar Usuário';
   const roles=ctx.me.user.role==='MASTER'?[['CLIENT','Cliente'],['RESELLER','Revendedor'],['ADMIN','Administrador']]:[['CLIENT','Cliente']];
   fields=field('name','Nome completo')+field('email','E-mail','email')+field('password','Senha inicial','password','minlength="12" maxlength="72" autocomplete="new-password"')+select('role','Perfil',roles,kind==='resellers'?'RESELLER':'CLIENT')+select('plan_id','Plano',plans.map(p=>[p.id,p.name]));
+  fields+='<label data-validity>Validade em dias<input class="input" name="validity_days" type="number" min="1" max="365000" step="1" value="30"><span class="helper">Prazo de acesso ao painel. Você pode escolher outra quantidade de dias.</span></label>';
   note='A senha precisa ter ao menos 12 caracteres. Conceda acesso ao servidor pelo módulo Servidores VPS.';
  }else if(kind==='plans'){
   title='Criar Plano'; fields=field('name','Nome do plano')+field('price_cents','Preço mensal (centavos)','number','min="0" value="4990"');
@@ -24,7 +25,7 @@ export async function creationForm(kind,ctx){
  }else{
   title='Adicionar '+(ctx.me.catalog[kind]?.label||kind);
   if(!ctx.me.servers.length)throw new Error('Cadastre ou autorize um servidor antes de criar este recurso.');
-  fields=select('server_id','Servidor',ctx.me.servers.map(s=>[s.id,s.name]));
+  fields=kind==='databases'&&ctx.me.user.role==='CLIENT'?'':select('server_id','Servidor',ctx.me.servers.map(s=>[s.id,s.name]));
   if(ctx.can('users.view')){const users=(await api('/users')).data.filter(u=>u.status==='active');fields+=select('owner_id','Proprietário',users.map(u=>[u.id,`${u.name} · ${u.role}`]),ctx.me.user.id);}
   if(['domains','ssl_certificates','ftp_accounts','backups','cron_jobs'].includes(kind)){
    const sites=(await api('/websites')).data.filter(s=>s.status==='active');
@@ -35,7 +36,7 @@ export async function creationForm(kind,ctx){
   const schemas={
    websites:()=>field('domain','Domínio ou IP da VPS','text','placeholder="exemplo.com.br"')+select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),'8.3'),
    domains:()=>field('domain','Domínio','text','placeholder="www.exemplo.com.br"')+select('type','Tipo',[['alias','Alias'],['parked','Estacionado'],['redirect','Redirecionamento']])+'<label>Destino (somente redirecionamento)<input class="input" name="target" placeholder="destino.com.br"></label>',
-   databases:()=>field('name','Nome do banco','text','pattern="[a-z][a-z0-9_]{0,31}" placeholder="meu_banco"')+field('password','Senha do banco','password','minlength="12" maxlength="72" autocomplete="new-password"'),
+   databases:()=>field('name','Nome do banco','text','pattern="[a-z][a-z0-9_]{0,31}" placeholder="meu_banco"')+field('username','Usuário do banco','text','pattern="[a-z][a-z0-9_]{0,31}" placeholder="meu_usuario"')+field('password','Senha do banco','password','minlength="12" maxlength="72" autocomplete="new-password"')+'<div class="full helper" data-database-preview aria-live="polite"></div>',
    ssl_certificates:()=>field('email','E-mail de contato ACME','email',`value="${esc(ctx.me.user.email)}"`),
    ftp_accounts:()=>field('name','Nome do usuário SFTP','text','pattern="[a-z][a-z0-9_]{0,20}"')+field('password','Senha SFTP','password','minlength="12" maxlength="72" autocomplete="new-password"'),
    backups:()=>'<div class="full notice">Será criado um arquivo dos dados do site no servidor. Este fluxo não inclui o banco de dados.</div>',
@@ -46,9 +47,16 @@ export async function creationForm(kind,ctx){
   fields+=schemas[kind]?.()||'';
   note=kind==='docker_containers'?'Somente imagens autorizadas pelo operador. Containers são criados sem acesso à rede, sem volumes do host e sem privilégios.':kind==='ssl_certificates'?'O DNS precisa apontar para o servidor e a porta 80 deve estar acessível para a validação Let’s Encrypt.':'A operação será executada pelo agente. Acompanhe o resultado em Operações.';
  }
- return{title,bind:kind==='cron_jobs'?form=>bindSchedule(form,cronSites):undefined,html:`${note?`<div class="notice">${esc(note)}</div>`:''}<div class="form-grid">${fields}</div>`,serialize(form){
+ return{title,bind(form){
+  if(kind==='cron_jobs')bindSchedule(form,cronSites);
+  if(form.elements.validity_days){const update=()=>{const enabled=form.elements.role.value==='RESELLER';form.querySelector('[data-validity]').hidden=!enabled;form.elements.validity_days.disabled=!enabled;form.elements.validity_days.required=enabled;};form.elements.role.addEventListener('change',update);update();}
+  if(kind==='databases'){
+   const update=()=>{const prefix=`u${form.elements.owner_id?.value||ctx.me.user.id}_`;for(const key of ['name','username'])form.elements[key].maxLength=32-prefix.length;form.querySelector('[data-database-preview]').textContent=`Nome final: ${prefix}${form.elements.name.value||'meu_banco'} · Usuário final: ${prefix}${form.elements.username.value||'meu_usuario'}. O prefixo identifica sua conta.`;};
+   form.addEventListener('input',update);form.addEventListener('change',update);update();
+  }
+ },html:`${note?`<div class="notice">${esc(note)}</div>`:''}<div class="form-grid">${fields}</div>`,serialize(form){
   const values=Object.fromEntries(new FormData(form));
-  for(const key of ['server_id','owner_id','website_id','plan_id','port','memory_mb','cpu','price_cents'])if(values[key]!==undefined)values[key]=Number(values[key]);
+  for(const key of ['server_id','owner_id','website_id','plan_id','port','memory_mb','cpu','price_cents','validity_days'])if(values[key]!==undefined)values[key]=Number(values[key]);
   if(kind==='plans'){values.limits={};for(const key of Object.keys(limitsLabels)){values.limits[key]=Number(values[`limit_${key}`]);delete values[`limit_${key}`];}values.features=[];for(const key of Object.keys(values))if(key.startsWith('feature_')){values.features.push(key.slice(8));delete values[key];}}
   return values;
  }};

@@ -29,7 +29,7 @@ final class Auth
         $u=$this->db->one('SELECT * FROM users WHERE email=?',[$email]);
         $password=is_string($data['password']??null)?$data['password']:'';
         $valid=password_verify($password,$u['password_hash']??'$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.');
-        if(!$u || !$valid || $u['status']!=='active') {
+        if(!$u || !$valid || !AccountValidity::available($this->db,$u)) {
             if($u) Audit::write($this->db,$u,'auth.login','','denied');
             throw new HttpError(401,'E-mail, senha ou código inválidos.');
         }
@@ -63,7 +63,7 @@ final class Auth
             $this->db->query('UPDATE sessions SET last_seen=? WHERE id=?',[time(),$s['id']]);
         }
         $u=$this->db->one('SELECT * FROM users WHERE id=? AND status=?',[$uid,'active']);
-        if(!$u) throw new HttpError(401,'Conta indisponível.');
+        if(!$u || !AccountValidity::available($this->db,$u)) throw new HttpError(401,'Conta indisponível, suspensa ou com validade encerrada.');
         if($u['parent_id']) {
             $parent=$this->db->one('SELECT status FROM users WHERE tenant_id=? AND id=?',[$u['tenant_id'],$u['parent_id']]);
             if(!$parent || $parent['status']!=='active') throw new HttpError(401,'Conta principal suspensa.');
@@ -77,5 +77,5 @@ final class Auth
     public function logout(array $u): array {
         $this->sessionOnly(); $this->db->query('DELETE FROM sessions WHERE id=?',[$this->session['id']]); $this->cookie('',time()-3600); Audit::write($this->db,$u,'auth.logout'); return ['message'=>'Sessão encerrada.'];
     }
-    public static function publicUser(array $u): array { return array_intersect_key($u,array_flip(['id','tenant_id','parent_id','plan_id','name','email','role','status','created_at'])); }
+    public static function publicUser(array $u): array { $result=array_intersect_key($u,array_flip(['id','tenant_id','parent_id','plan_id','name','email','role','status','created_at','expires_at'])); $result['expired']=AccountValidity::expired($u); return $result; }
 }

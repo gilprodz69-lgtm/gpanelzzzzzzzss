@@ -39,7 +39,7 @@ class Operations:
         self.catalog.commit()
 
     def execute(self, operation, p):
-        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'change_php']
+        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'change_php']
         kinds = ['site', 'domain', 'database', 'ssl', 'sftp', 'backup', 'cron', 'firewall', 'container']
         allowed += [f'{verb}_{kind}' for verb in ['create', 'delete'] for kind in kinds]
         if operation not in allowed:
@@ -225,29 +225,48 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
 
     def create_database(self, p):
         name = identifier(p['name']); secret = password(p['password'])
-        if not name.startswith(f"u{integer(p['owner_id'])}_"):
+        username = identifier(p.get('username', name))
+        if not all(value.startswith(f"u{integer(p['owner_id'])}_") for value in [name, username]):
             raise Rejected('Database prefix mismatch')
         # MariaDB mysql_native_password hash avoids passing cleartext in command lines/SQL literals.
         import hashlib
         digest = '*' + hashlib.sha1(hashlib.sha1(secret.encode()).digest()).hexdigest().upper()
         grant_name = name.replace('_', '\\_')
-        sql = f"CREATE DATABASE `{name}` CHARACTER SET utf8mb4; CREATE USER '{name}'@'localhost' IDENTIFIED BY PASSWORD '{digest}'; GRANT ALL PRIVILEGES ON `{grant_name}`.* TO '{name}'@'localhost';"
-        run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=sql)
-        self.save('database', p, {'name': name})
-        return {'name': name, 'username': name, 'host': 'localhost'}
+        db_created = user_created = False
+        def sql(query):
+            return run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=query)
+        try:
+            sql(f"CREATE DATABASE `{name}` CHARACTER SET utf8mb4;"); db_created = True
+            sql(f"CREATE USER '{username}'@'localhost' IDENTIFIED BY PASSWORD '{digest}';"); user_created = True
+            sql(f"GRANT ALL PRIVILEGES ON `{grant_name}`.* TO '{username}'@'localhost';")
+            self.save('database', p, {'name': name, 'username': username})
+        except Exception:
+            if user_created: sql(f"DROP USER IF EXISTS '{username}'@'localhost';")
+            if db_created: sql(f"DROP DATABASE IF EXISTS `{name}`;")
+            raise
+        return {'name': name, 'username': username, 'host': 'localhost'}
 
     def delete_database(self, p):
         d = self.find('database', p); name = identifier(d['name'])
-        run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=f"DROP DATABASE IF EXISTS `{name}`; DROP USER IF EXISTS '{name}'@'localhost';")
+        username = identifier(d.get('username', name))
+        run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=f"DROP DATABASE IF EXISTS `{name}`; DROP USER IF EXISTS '{username}'@'localhost';")
         self.forget('database', p); return {'message': 'Database removed'}
 
     def database_password(self, p):
         import hashlib
         d = self.find('database', p)
-        name = identifier(d['name']); secret = password(p['password'])
+        name = identifier(d.get('username', d['name'])); secret = password(p['password'])
         digest = '*' + hashlib.sha1(hashlib.sha1(secret.encode()).digest()).hexdigest().upper()
         run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=f"SET PASSWORD FOR '{name}'@'localhost' = '{digest}';")
         return {'message': 'Password updated'}
+
+    def database_info(self, p):
+        d = self.find('database', p); name = identifier(d['name'])
+        sql = f"SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='{name}'; SELECT COUNT(*), COALESCE(SUM(DATA_LENGTH+INDEX_LENGTH),0) FROM information_schema.TABLES WHERE TABLE_SCHEMA='{name}';"
+        rows = run(['/usr/bin/mariadb', '--protocol=socket', '--batch', '--skip-column-names'], input_text=sql).strip().splitlines()
+        if len(rows) != 2: raise Rejected('Database not found on the host')
+        charset, collation = rows[0].split('\t'); tables, size = rows[1].split('\t')
+        return {'charset': charset, 'collation': collation, 'tables': int(tables), 'size_bytes': int(size)}
 
     def change_php(self, p):
         s = self.find('site', p)

@@ -9,6 +9,7 @@ import sys
 import time
 import json
 import pwd
+import subprocess
 from unittest.mock import patch
 if os.getenv('GITHUB_ACTIONS') != 'true' or os.geteuid() != 0:
     raise SystemExit('Run only on the disposable GitHub Actions runner as root')
@@ -93,13 +94,31 @@ for p,cron,site,version in cron_fixtures:
     ops.delete_site(p)
 print('PASS real scheduled PHP execution, site user isolation, PHP change and cron removal',flush=True)
 
-db={'tenant_id':999,'owner_id':999,'resource_id':999,'name':'u999_integration','password':'IntegrationOnly_73622'}
+db={'tenant_id':999,'owner_id':999,'resource_id':999,'name':'u999_integration','username':'u999_separate','password':'IntegrationOnly_73622'}
 ops.create_database(db)
-sql="SHOW GRANTS FOR 'u999_integration'@'localhost';"
+sql="SHOW GRANTS FOR 'u999_separate'@'localhost';"
 grants=run(['/usr/bin/mariadb','--protocol=socket','--batch','--raw'],input_text=sql)
 assert 'u999\\_integration' in grants,grants
+def db_login(secret,query):
+    return subprocess.run(['/usr/bin/mariadb','--protocol=socket','--batch','--skip-column-names','--user=u999_separate',db['name']],input=query,text=True,capture_output=True,env={**os.environ,'MYSQL_PWD':secret},timeout=10)
+assert db_login(db['password'],'CREATE TABLE sample(id INT); INSERT INTO sample VALUES(7);').returncode==0
+assert db_login(db['password'],'SELECT * FROM mysql.user;').returncode!=0
+info=ops.database_info(db);assert info['tables']==1 and info['charset']=='utf8mb4' and info['size_bytes']>=0
+try:
+    ops.create_database({**db,'resource_id':998,'name':'u999_collision'})
+    raise AssertionError('Duplicate user accepted')
+except RuntimeError:pass
+assert run(['/usr/bin/mariadb','--batch','--skip-column-names'],input_text="SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='u999_collision';").strip()=='0'
 ops.database_password({**db,'password':'AnotherTestOnly_66373'})
+assert db_login(db['password'],'SELECT 1;').returncode!=0
+assert db_login('AnotherTestOnly_66373','SELECT * FROM sample;').stdout.strip()=='7'
 ops.delete_database(db)
-print('PASS database creation, scoped grant, password change and removal',flush=True)
+assert db_login('AnotherTestOnly_66373','SELECT 1;').returncode!=0
+# An inventory created by previous versions has no username field.
+legacy={**db,'resource_id':997,'name':'u999_legacy'};legacy.pop('username')
+ops.create_database(legacy)
+ops.catalog.execute("UPDATE resources SET data=? WHERE tenant=999 AND kind='database' AND id=997",(json.dumps({'name':'u999_legacy'}),));ops.catalog.commit()
+ops.database_password({**legacy,'password':'LegacyTestOnly_73622'});ops.delete_database(legacy)
+print('PASS independent database/user, scoped login, statistics, collision rollback, password change, legacy compatibility and removal',flush=True)
 metrics=ops.metrics({});assert metrics['memory_total']>0 and metrics['disk_total']>0
 print('PASS live host metrics',flush=True)

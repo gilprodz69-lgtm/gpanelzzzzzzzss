@@ -140,6 +140,63 @@ check('cron cannot target another account or a pending site',function()use($db,$
     denied(fn()=>$resource->create('cron_jobs',$data+['owner_id'=>$resellerId]),422);
 });
 
+check('reseller validity defaults to 30 days and supports custom renewal',function()use($db,$master,$plan){
+    $service=new AccountService($db,$master);$now=time();
+    $data=['role'=>'RESELLER','name'=>'Validity','email'=>'validity@example.com','password'=>'ValidityTest!12345','plan_id'=>$plan];
+    $id=$service->createUser($data)['id'];$expires=(int)$db->scalar('SELECT expires_at FROM users WHERE id=?',[$id]);
+    eq(abs($expires-$now-30*86400)<=2,true);
+    $service->updateUser($id,['renew_days'=>47]);eq((int)$db->scalar('SELECT expires_at FROM users WHERE id=?',[$id]),$expires+47*86400);
+    $service->updateUser($id,['validity_days'=>365]);eq(abs((int)$db->scalar('SELECT expires_at FROM users WHERE id=?',[$id])-time()-365*86400)<=2,true);
+    $db->query('UPDATE users SET expires_at=? WHERE id=?',[time()-10,$id]);
+    $service->updateUser($id,['renew_days'=>2]);eq(abs((int)$db->scalar('SELECT expires_at FROM users WHERE id=?',[$id])-time()-2*86400)<=2,true);
+    foreach([0,-1,1.5,'invalid'] as $days)denied(fn()=>$service->updateUser($id,['renew_days'=>$days]),422);
+    $custom=$service->createUser(array_merge($data,['email'=>'customvalidity@example.com','validity_days'=>73]))['id'];
+    eq(abs((int)$db->scalar('SELECT expires_at FROM users WHERE id=?',[$custom])-time()-73*86400)<=2,true);
+    (require BASE_PATH.'/database/migrations/004_account_validity.php')($db);
+    eq((int)$db->scalar('SELECT expires_at FROM users WHERE id=?',[$id])>time(),true);
+});
+check('expired reseller blocks login, existing sessions, API tokens and subordinate access',function()use($db,$resellerId,$clientId,$user,$reseller){
+    $db->query('UPDATE users SET expires_at=? WHERE id=?',[time()-1,$resellerId]);
+    eq(Auth::publicUser($user($resellerId))['expired'],true);
+    foreach([$resellerId,$clientId] as $uid){
+        denied(fn()=>(new Auth($db))->login(['email'=>$user($uid)['email'],'password'=>'SecureTest!123456']),401);
+        $raw='test-expired-session-'.$uid;$sid=hash('sha256',$raw);
+        $db->insert('sessions',['id'=>$sid,'user_id'=>$uid,'csrf'=>'test','ip'=>'127.0.0.1','user_agent'=>'test','created_at'=>time(),'last_seen'=>time(),'expires_at'=>time()+100]);
+        $_COOKIE['vps_session']=$raw;denied(fn()=>(new Auth($db))->authenticate(),401);unset($_COOKIE['vps_session']);
+        $token='expired-api-'.$uid;$db->insert('api_keys',['user_id'=>$uid,'name'=>'test','token_hash'=>hash('sha256',$token),'scopes_json'=>'["dashboard.view"]','created_at'=>time(),'expires_at'=>time()+100]);
+        $_SERVER['HTTP_AUTHORIZATION']='Bearer '.$token;denied(fn()=>(new Auth($db))->authenticate(),401);unset($_SERVER['HTTP_AUTHORIZATION']);
+    }
+    denied(fn()=>$reseller->owner($clientId),422);
+    $db->query('UPDATE users SET expires_at=NULL WHERE id=?',[$resellerId]);
+});
+check('password changes revoke access and cannot cross account boundaries',function()use($db,$master,$reseller,$resellerId,$clientId,$outsiderId,$user){
+    denied(fn()=>(new AccountService($db,$reseller))->updateUser($resellerId,['renew_days'=>100]),403);
+    denied(fn()=>(new AccountService($db,$reseller))->updateUser($clientId,['validity_days'=>100]),403);
+    denied(fn()=>(new AccountService($db,$master))->updateUser($outsiderId,['password'=>'ChangeTest!12345']),404);
+    (new AccountService($db,$master))->updateUser($clientId,['password'=>'ChangeTest!12345']);
+    eq(password_verify('ChangeTest!12345',$user($clientId)['password_hash']),true);
+    eq((int)$db->scalar('SELECT COUNT(*) FROM sessions WHERE user_id=?',[$clientId]),0);
+    eq((int)$db->scalar('SELECT COUNT(*) FROM api_keys WHERE user_id=?',[$clientId]),0);
+    eq(str_contains(json_encode($db->all('SELECT * FROM audit_logs')),'ChangeTest!12345'),false);
+});
+check('database names and usernames are independent, scoped and reserved atomically',function()use($db,$master,$server,$masterId){
+    $service=new ResourceService($db,$master);
+    $data=['server_id'=>$server,'name'=>'separate','username'=>'loginuser','password'=>'DatabaseNew!12345'];
+    $r=$service->create('databases',$data);$record=$service->present($service->find('databases',$r['id']));
+    eq($record['name'],'u'.$masterId.'_separate');eq($record['config']['username'],'u'.$masterId.'_loginuser');
+    $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$r['job_id']])),true);
+    eq($payload['username'],$record['config']['username']);
+    denied(fn()=>$service->create('databases',array_merge($data,['name'=>'different'])),409);
+    denied(fn()=>$service->create('databases',array_merge($data,['username'=>'different'])),409);
+    foreach(["evil';id",str_repeat('a',32)] as $username)denied(fn()=>$service->create('databases',array_merge($data,['name'=>'invalid','username'=>$username])),422);
+    eq(str_contains(json_encode($record),'DatabaseNew!12345'),false);
+});
+check('client database automatically uses authorized hosting and own account',function()use($db,$client,$clientId,$server,$masterId){
+    $service=new ResourceService($db,$client);
+    $r=$service->create('databases',['name'=>'automatic','username'=>'clientlogin','password'=>'DatabaseNew!12345','server_id'=>999999,'owner_id'=>$masterId]);
+    $row=$service->find('databases',$r['id']);eq((int)$row['server_id'],$server);eq((int)$row['owner_id'],$clientId);
+});
+
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

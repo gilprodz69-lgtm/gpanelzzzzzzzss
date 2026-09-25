@@ -28,7 +28,7 @@ final class Policy
     public function owner(int $id): array {
         if (!in_array($id,$this->ownerIds(),true)) throw new HttpError(404,'Conta não encontrada.');
         $u=$this->db->one('SELECT * FROM users WHERE tenant_id=? AND id=?',[$this->user['tenant_id'],$id]);
-        if (!$u || $u['status']!=='active') throw new HttpError(422,'Conta indisponível.'); return $u;
+        if (!$u || !\App\Services\AccountValidity::available($this->db,$u)) throw new HttpError(422,'Conta indisponível ou com validade encerrada.'); return $u;
     }
     public function server(int $id, ?int $owner = null): array {
         $s=$this->db->one('SELECT * FROM servers WHERE tenant_id=? AND id=?',[$this->user['tenant_id'],$id]);

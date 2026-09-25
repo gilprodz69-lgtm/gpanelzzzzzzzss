@@ -62,7 +62,14 @@ final class ApiController
             $server=$this->policy->server((int)$r['server_id']);
             if($m[2]==='access' && $method==='GET') {
                 $local=in_array(parse_url($server['agent_url'],PHP_URL_HOST),['localhost','127.0.0.1'],true);
-                return ['name'=>$r['name'],'username'=>$r['name'],'host'=>'localhost','port'=>3306,'phpmyadmin_url'=>$local?rtrim(getenv('APP_URL'),'/').'/phpmyadmin/':null];
+                $config=json_decode($r['config_json'],true);
+                $info=['name'=>$r['name'],'username'=>$config['username']??$r['name'],'host'=>'localhost','port'=>3306,'status'=>$r['status'],'created_at'=>$r['created_at'],'charset'=>'utf8mb4','phpmyadmin_url'=>$local?rtrim(getenv('APP_URL'),'/').'/phpmyadmin/':null];
+                if($u['role']!=='CLIENT') $info['server']=$server['name'];
+                try {
+                    $stats=(new AgentClient($this->db))->call($server,'database_info',['tenant_id'=>(int)$r['tenant_id'],'owner_id'=>(int)$r['owner_id'],'resource_id'=>(int)$r['id']],bin2hex(random_bytes(16)));
+                    foreach(['tables','size_bytes','charset','collation'] as $key) if(isset($stats[$key]))$info[$key]=$stats[$key];
+                } catch(\Throwable $e) { $info['stats_message']='Estatísticas indisponíveis no momento. Verifique se o agente está atualizado e online.'; }
+                return $info;
             }
             if($m[2]==='password' && $method==='POST') {
                 $payload=['tenant_id'=>(int)$r['tenant_id'],'owner_id'=>(int)$r['owner_id'],'resource_id'=>(int)$r['id'],'password'=>Input::password($data['password']??'')];

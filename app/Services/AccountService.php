@@ -25,7 +25,8 @@ final class AccountService
             (new Quota($this->db))->check($parent,'users');
             $plan=$this->findPlan(Input::integer($d['plan_id']??null,'Plano'));
             if(!$this->policy->isAdmin() && $plan['owner_id']!==null && (int)$plan['owner_id']!==(int)$actor['id']) throw new HttpError(403,'Plano não autorizado.');
-            $id=$this->db->insert('users',['tenant_id'=>$actor['tenant_id'],'parent_id'=>$parent['id'],'plan_id'=>$plan['id'],'name'=>Input::text($d['name']??'','Nome'),'email'=>Input::email($d['email']??''),'password_hash'=>password_hash(Input::password($d['password']??''),PASSWORD_DEFAULT),'role'=>$role,'created_at'=>time()]);
+            $expires=$role==='RESELLER'?time()+Input::integer($d['validity_days']??30,'Validade em dias',1,365000)*86400:null;
+            $id=$this->db->insert('users',['tenant_id'=>$actor['tenant_id'],'parent_id'=>$parent['id'],'plan_id'=>$plan['id'],'name'=>Input::text($d['name']??'','Nome'),'email'=>Input::email($d['email']??''),'password_hash'=>password_hash(Input::password($d['password']??''),PASSWORD_DEFAULT),'role'=>$role,'expires_at'=>$expires,'created_at'=>time()]);
             $rid=$this->db->scalar('SELECT id FROM roles WHERE name=?',[$role]); $this->db->insert('user_roles',['user_id'=>$id,'role_id'=>$rid]);
             Audit::write($this->db,$actor,'users.create',(string)$id); return ['id'=>$id,'message'=>'Conta criada.'];
         });
@@ -38,17 +39,31 @@ final class AccountService
         $plan=isset($d['plan_id'])?$this->findPlan(Input::integer($d['plan_id'],'Plano')):null;
         $name=isset($d['name'])?Input::text($d['name'],'Nome'):null;
         $email=isset($d['email'])?Input::email($d['email']):null;
+        $password=isset($d['password'])?password_hash(Input::password($d['password']),PASSWORD_DEFAULT):null;
+        $expires=null;
+        if(isset($d['validity_days'])||isset($d['renew_days'])) {
+            if(!$this->policy->isAdmin()||$u['role']!=='RESELLER') throw new HttpError(403,'Somente a administração pode alterar a validade de revendedores.');
+            if(isset($d['validity_days'],$d['renew_days'])) throw new HttpError(422,'Escolha alterar ou renovar a validade.');
+            $days=Input::integer($d['renew_days']??$d['validity_days'],'Validade em dias',1,365000);
+            $expires=(isset($d['renew_days'])?max(time(),(int)($u['expires_at']??0)):time())+$days*86400;
+        }
         if(isset($d['permissions'])) {
             if($this->policy->user['role']!=='MASTER') throw new HttpError(403,'Somente MASTER pode configurar permissões individuais.');
             if(!is_array($d['permissions'])||array_diff(array_keys($d['permissions']),Catalog::permissions())) throw new HttpError(422,'Permissões inválidas.');
             foreach($d['permissions'] as $allowed) if(!is_bool($allowed)) throw new HttpError(422,'Use true ou false para permissões.');
         }
-        $this->db->transaction(function() use($d,$id,$status,$plan,$name,$email){
+        $this->db->transaction(function() use($d,$id,$status,$plan,$name,$email,$password,$expires){
             $this->db->lockTenant((int)$this->policy->user['tenant_id']);
+            if(isset($d['renew_days'])) $expires=max(time(),(int)$this->db->scalar('SELECT expires_at FROM users WHERE id=?',[$id]))+(int)$d['renew_days']*86400;
             if($status!==null) { $this->db->query('UPDATE users SET status=? WHERE id=?',[$status,$id]); if($status==='suspended') $this->db->query('DELETE FROM sessions WHERE user_id=?',[$id]); }
             if($plan!==null) $this->db->query('UPDATE users SET plan_id=? WHERE id=?',[$plan['id'],$id]);
             if($name!==null) $this->db->query('UPDATE users SET name=? WHERE id=?',[$name,$id]);
             if($email!==null) $this->db->query('UPDATE users SET email=? WHERE id=?',[$email,$id]);
+            if($expires!==null) $this->db->query('UPDATE users SET expires_at=? WHERE id=?',[$expires,$id]);
+            if($password!==null) {
+                $this->db->query('UPDATE users SET password_hash=? WHERE id=?',[$password,$id]);
+                foreach(['sessions','api_keys','password_resets'] as $table) $this->db->query("DELETE FROM $table WHERE user_id=?",[$id]);
+            }
             foreach(($d['permissions']??[]) as $p=>$allowed) { $this->db->query('DELETE FROM user_permissions WHERE user_id=? AND permission=?',[$id,$p]); $this->db->insert('user_permissions',['user_id'=>$id,'permission'=>$p,'allowed'=>(int)$allowed]); }
             Audit::write($this->db,$this->policy->user,'users.edit',(string)$id);
         });
@@ -59,7 +74,7 @@ final class AccountService
         if(!in_array($id,$this->policy->ownerIds(),true)) throw new HttpError(404,'Conta não encontrada.');
         $u=$this->db->one('SELECT * FROM users WHERE tenant_id=? AND id=?',[$this->policy->user['tenant_id'],$id]);
         if(!$u) throw new HttpError(404,'Conta não encontrada.');
-        return ['user'=>Auth::publicUser($u),'permissions'=>(new Policy($this->db,$u))->permissions(),'available_permissions'=>Catalog::permissions()];
+        return ['user'=>Auth::publicUser($u),'plan_name'=>$this->db->scalar('SELECT name FROM plans WHERE tenant_id=? AND id=?',[$u['tenant_id'],$u['plan_id']]),'clients'=>(int)$this->db->scalar("SELECT COUNT(*) FROM users WHERE tenant_id=? AND parent_id=? AND role='CLIENT'",[$u['tenant_id'],$id]),'permissions'=>(new Policy($this->db,$u))->permissions(),'available_permissions'=>Catalog::permissions()];
     }
     public function plans(): array {
         $this->policy->require('plans.view'); $sql='SELECT * FROM plans WHERE tenant_id=?'; $args=[$this->policy->user['tenant_id']];

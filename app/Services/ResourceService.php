@@ -22,6 +22,13 @@ final class ResourceService
     public function present(array $r): array { $r['config']=json_decode($r['config_json'],true); unset($r['config_json']); return $r; }
     public function create(string $kind,array $data): array {
         $this->kind($kind); $this->policy->require("$kind.create");
+        if($kind==='databases' && $this->policy->user['role']==='CLIENT') {
+            $available=(new ServerService($this->db,$this->policy))->list(true);
+            if(!$available) throw new HttpError(422,'Sua conta ainda não tem hospedagem autorizada. Contate o responsável.');
+            $site=$this->db->one("SELECT server_id FROM websites WHERE tenant_id=? AND owner_id=? AND status='active' AND deleted_at IS NULL ORDER BY id LIMIT 1",[$this->policy->user['tenant_id'],$this->policy->user['id']]);
+            $data['server_id']=$site['server_id']??$available[0]['id'];
+            $data['owner_id']=$this->policy->user['id'];
+        }
         if($kind==='firewall_rules' && !$this->policy->isAdmin()) throw new HttpError(403,'Firewall é uma configuração do servidor, exclusiva da administração.');
         return $this->db->transaction(function() use($kind,$data) {
             $this->db->lockTenant((int)$this->policy->user['tenant_id']);
@@ -49,7 +56,15 @@ final class ResourceService
         switch($kind) {
             case 'websites': $name=filter_var($d['domain']??'',FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)?$d['domain']:Input::domain($d['domain']??''); if(filter_var($name,FILTER_VALIDATE_IP) && (!$this->policy->isAdmin() || $name!==$this->policy->server($server)['address'])) throw new HttpError(422,'O site por IP deve usar o endereço deste servidor e ser criado pelo administrador.'); $c=['domain'=>$name,'php_version'=>Input::choice($d['php_version']??'8.3',\App\Models\PhpVersions::ALL,'PHP'),'email'=>$owner['email']]; break;
             case 'domains': $name=Input::domain($d['domain']??''); $c['alias']=$name; $c['type']=Input::choice($d['type']??'alias',['alias','redirect','parked'],'Tipo'); if($c['type']==='redirect') $c['target']=Input::domain($d['target']??''); break;
-            case 'databases': $label=Input::identifier($d['name']??''); $name='u'.$owner['id'].'_'.$label; $c=['name'=>$name]; $secret['password']=Input::password($d['password']??''); break;
+            case 'databases':
+                $prefix='u'.$owner['id'].'_';
+                $name=Input::identifier($prefix.Input::identifier($d['name']??''));
+                $username=Input::identifier($prefix.Input::identifier($d['username']??$d['name']??''));
+                foreach($this->db->all('SELECT name,config_json FROM `databases` WHERE server_id=? AND deleted_at IS NULL',[$server]) as $database) {
+                    $config=json_decode($database['config_json'],true);
+                    if($database['name']===$name||($config['username']??$database['name'])===$username) throw new HttpError(409,'Nome do banco ou usuário já utilizado. Escolha outro nome.');
+                }
+                $c=['name'=>$name,'username'=>$username]; $secret['password']=Input::password($d['password']??''); break;
             case 'ssl_certificates': $name=$c['domain']; $c['email']=Input::email($d['email']??$owner['email']); break;
             case 'ftp_accounts': $name='s'.$owner['id'].'_'.Input::identifier($d['name']??''); if(strlen($name)>30) throw new HttpError(422,'Nome de conta muito longo.'); $c['name']=$name; $secret['password']=Input::password($d['password']??''); break;
             case 'backups':
