@@ -1,0 +1,14 @@
+[Unit]
+Description=VPS Manager metrics collection
+After=network-online.target mariadb.service
+
+[Service]
+Type=oneshot
+User=vpsmanager
+Group=vpsmanager
+WorkingDirectory=/opt/vpsmanager/current
+ExecStart=/usr/bin/php /opt/vpsmanager/current/scripts/console.php metrics
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/vpsmanager/shared/storage

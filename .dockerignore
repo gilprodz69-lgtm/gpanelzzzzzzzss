@@ -1,0 +1,7 @@
+.tools
+.git
+.env
+storage
+node_modules
+test-results
+tests

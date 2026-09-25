@@ -1,0 +1,8 @@
+[Unit]
+Description=Collect VPS metrics every minute
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+Persistent=true
+[Install]
+WantedBy=timers.target

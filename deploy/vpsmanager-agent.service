@@ -1,0 +1,22 @@
+[Unit]
+Description=VPS Manager privileged operation agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/vpsmanager/current/agent
+ExecStart=/usr/bin/python3 /opt/vpsmanager/current/agent/server.py
+EnvironmentFile=-/etc/vpsmanager/agent.env
+Restart=on-failure
+RestartSec=5
+UMask=0077
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/etc /srv/vpsmanager /var/lib/vpsmanager-agent /var/log /var/cache /var/mail /run
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target

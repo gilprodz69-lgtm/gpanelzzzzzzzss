@@ -1,0 +1,320 @@
+{
+  "version": "0.1.0-preview",
+  "files": [
+    {
+      "path": ".dockerignore",
+      "bytes": 57,
+      "sha256": "ddf3a390af1d4084e76c0d381535ea5761a1eebad215d134706bbcf83bcec374"
+    },
+    {
+      "path": ".env.example",
+      "bytes": 227,
+      "sha256": "527115b8d8e350fb88bae59d2d653e3c060f19970e8d8ecd7f597985aeebb89b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3958,
+      "sha256": "1dae68d0b35734da8933c8a021be693fa93f7e106f677e8bcf608afd1df7065d"
+    },
+    {
+      "path": "VERSION",
+      "bytes": 14,
+      "sha256": "8f8ada7463f7520c01add507b1c01f1207fc90082adb62f654c18c36d648e389"
+    },
+    {
+      "path": "agent/files.py",
+      "bytes": 4686,
+      "sha256": "20523e7c6b1bde7d9d1279d2549a89d809a5d87db63c36b7b92fa5a70f1f38af"
+    },
+    {
+      "path": "agent/operations.py",
+      "bytes": 19680,
+      "sha256": "bea824104a626f0c1b653eff5dcfc99976f321dc787f33813e4fc57b2f0175e3"
+    },
+    {
+      "path": "agent/runtime.py",
+      "bytes": 2045,
+      "sha256": "d7668370b159209ad5bfe0530135198b496d6ec8ac1c21bbce8a5bfc36fb14ee"
+    },
+    {
+      "path": "agent/server.py",
+      "bytes": 5434,
+      "sha256": "eaac1d7eafd7626c2a6ba22263530bb8ae93f269f1f15da59066601104f1835d"
+    },
+    {
+      "path": "agent/validation.py",
+      "bytes": 2862,
+      "sha256": "4ce028b74b4e736a188c5c77224a31c1c42c0c2863cc3ceeaf0ce84c002b6c65"
+    },
+    {
+      "path": "app/Controllers/ApiController.php",
+      "bytes": 15607,
+      "sha256": "8e8307142f5f9553358dac667f6f7d09b8b458d459be3846119ea78ab1a2e153"
+    },
+    {
+      "path": "app/Helpers/Crypto.php",
+      "bytes": 1015,
+      "sha256": "23701a7216be9a01ddf7982534d52cb17e779b12310e3e79ae24d027c116a3a1"
+    },
+    {
+      "path": "app/Helpers/HttpError.php",
+      "bytes": 219,
+      "sha256": "e36ae22faa8a4d97275387837bbd37c3f7ccc854cd5fd980da0ac3b570cb22c3"
+    },
+    {
+      "path": "app/Middleware/Policy.php",
+      "bytes": 2851,
+      "sha256": "1368233af80b25b412090fa94342cb9eeb58a26f52c1d0f7044f18a220a83cb9"
+    },
+    {
+      "path": "app/Models/Catalog.php",
+      "bytes": 2404,
+      "sha256": "17c1ac1157c07dbcc0f7c7a172ab2926e3ba8fdbb30f0f4e4758ca69aea30643"
+    },
+    {
+      "path": "app/Repositories/Database.php",
+      "bytes": 2523,
+      "sha256": "6e9d1ff1ea0a93533c5b10684e0983ccc48a27a13470c55611774489ef236f33"
+    },
+    {
+      "path": "app/Services/AccountService.php",
+      "bytes": 8173,
+      "sha256": "4bd170eda43c1c65fb2f60b6396d6610fb20e84d5fb9890b83d58ea8cc2fcde5"
+    },
+    {
+      "path": "app/Services/AgentClient.php",
+      "bytes": 1983,
+      "sha256": "85cba3d551531021e861070e4fab63370813885c63f5a78836053aa57e457820"
+    },
+    {
+      "path": "app/Services/Audit.php",
+      "bytes": 469,
+      "sha256": "d8fb9100b80e38362c6ab163a15ebbb5ad2b3369739ca70fa284d82ef786be9d"
+    },
+    {
+      "path": "app/Services/Auth.php",
+      "bytes": 5663,
+      "sha256": "5fe832be6e9bf1b4e89ad9cc151d889e3a7a581849e3b15163c1e67c81678afd"
+    },
+    {
+      "path": "app/Services/BackupScheduler.php",
+      "bytes": 4751,
+      "sha256": "3b1dc494e5ce506bbd98cae27acf457b6612aa59fa11ef203509566562d196f0"
+    },
+    {
+      "path": "app/Services/Jobs.php",
+      "bytes": 587,
+      "sha256": "b26283f3695ae147ecbbeb59ecf3a2a116b5d6a470f78a64ffd05372f4703fd1"
+    },
+    {
+      "path": "app/Services/Migrator.php",
+      "bytes": 612,
+      "sha256": "ef20afe8cc345bb7b80a14a8d12a2b192b3e8cce94d678babc55256e79c2618c"
+    },
+    {
+      "path": "app/Services/Quota.php",
+      "bytes": 2708,
+      "sha256": "f79c973618ab3e7053ada7c3a70a15396c818d59dda4a0d464604657abf2e0d0"
+    },
+    {
+      "path": "app/Services/ResourceService.php",
+      "bytes": 8649,
+      "sha256": "959844fdb03ac8ed1184c2937418ddf3d2be5a4203eecd14199645db23e57e44"
+    },
+    {
+      "path": "app/Services/ServerService.php",
+      "bytes": 4083,
+      "sha256": "04a3819ac35ba08e7ef25425fb052d3d64654c3579f637df679d04c76a87aee0"
+    },
+    {
+      "path": "app/Services/Totp.php",
+      "bytes": 1118,
+      "sha256": "4bba2bcd578537c2ebb08e8f0a7b32487429b0988ea45133e7228f68b1791106"
+    },
+    {
+      "path": "app/Services/Worker.php",
+      "bytes": 5493,
+      "sha256": "cf5925d94fec29077542448255a19c4723c24a6e5a6d033a1374e4762edc3967"
+    },
+    {
+      "path": "app/Validators/Input.php",
+      "bytes": 1813,
+      "sha256": "6122e658737ae338b7263fee9d258f0893d23d2f815dc13e4dc559bae0e6a2a2"
+    },
+    {
+      "path": "app/bootstrap.php",
+      "bytes": 713,
+      "sha256": "fc2586556fcc33a9f9c3cc8b6e0925b51b911a351320321def73cee1b8e2f808"
+    },
+    {
+      "path": "compose.yaml",
+      "bytes": 1598,
+      "sha256": "359368d1ba9fdb37e8b009a9622a71089f25b9ed44aec52c20a79f9bac663ec2"
+    },
+    {
+      "path": "composer.json",
+      "bytes": 284,
+      "sha256": "e52d46d89958908dc5c11e94736320d01439b0bd52ef859383b9cc392515f719"
+    },
+    {
+      "path": "database/migrations/001_core.php",
+      "bytes": 7148,
+      "sha256": "f9b2a10256e30e50a79262b73727b930497211fc671e756fca76b0c78912001d"
+    },
+    {
+      "path": "database/migrations/002_backup_schedules.php",
+      "bytes": 897,
+      "sha256": "d23ea022a916a2541b5cebecb177ab52b6c711d11938c47c336e3076b07295e8"
+    },
+    {
+      "path": "deploy/Dockerfile",
+      "bytes": 569,
+      "sha256": "32bd57dfdaecb1989a57aa6259c37ba3c83dea0ae261c438ab102a8250df7584"
+    },
+    {
+      "path": "deploy/nginx-container.conf",
+      "bytes": 506,
+      "sha256": "5c05d2dfbf6f41ecd112d026641364d75382cd14167f9843efbdffe5ea6b9dce"
+    },
+    {
+      "path": "deploy/vpsmanager-agent.service",
+      "bytes": 555,
+      "sha256": "032020f387daa5211bfed71235afccf815565a047a863dbd398196c7cab522a1"
+    },
+    {
+      "path": "deploy/vpsmanager-metrics.service",
+      "bytes": 372,
+      "sha256": "674c29e3357cac2e56b67a479277fde6ad47f9cebee47518f81affe774756047"
+    },
+    {
+      "path": "deploy/vpsmanager-metrics.timer",
+      "bytes": 141,
+      "sha256": "5723fbd4fc0cdf5afadcb4e2c2a50320fc5ddad3c8cbe2c358ecd3faec73ef8d"
+    },
+    {
+      "path": "deploy/vpsmanager-worker.service",
+      "bytes": 492,
+      "sha256": "5d9533ba3dd6943344346de22b360b2de45eb61012bdad53cc9b93658486525e"
+    },
+    {
+      "path": "docs/AAPANEL-REFERENCE.md",
+      "bytes": 936,
+      "sha256": "a7a61e403eb325f3996abc753c29756ca9ad8f84743f7acd34bf110e42a6eb8b"
+    },
+    {
+      "path": "docs/AGENT.md",
+      "bytes": 3280,
+      "sha256": "68fffd88a34edae2f3564a083446a0ab8db08703b3bd2ecf5b596240468e5a6a"
+    },
+    {
+      "path": "docs/API.md",
+      "bytes": 3333,
+      "sha256": "61576492701eadddc35cf4cbcfade6c1c1a24f127d0c0ff19e60780395c7a2f2"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "bytes": 2658,
+      "sha256": "6ccad3284770312afcd1b4b88a0e1ab1b5f2da7c94ab30212929aac5f524ccb5"
+    },
+    {
+      "path": "docs/DATABASE.md",
+      "bytes": 2105,
+      "sha256": "3800b935ca5c25185c0cb88c4b71f4523bf368fcce8e501072aaa1b80b6641a9"
+    },
+    {
+      "path": "docs/DEPLOY.md",
+      "bytes": 3496,
+      "sha256": "10b240c0f5c79df2fde7fa7742a15882618413af6ae0943594b155bf91ad8889"
+    },
+    {
+      "path": "docs/INSTALL.md",
+      "bytes": 4025,
+      "sha256": "8896436bf1c950da398fd5539b61d32d0beae7604b9c265247830a75e1b9a7cd"
+    },
+    {
+      "path": "docs/SECURITY.md",
+      "bytes": 3333,
+      "sha256": "5dd9d69b2b43885d3b85bc44223ba8ee12d9632700088352bb4ac536f2a0b033"
+    },
+    {
+      "path": "docs/STATUS.md",
+      "bytes": 4607,
+      "sha256": "83d7f99044c8c03e2442a2e81b3503b17fbf779f30858eaec6294b915a9b2e07"
+    },
+    {
+      "path": "public/css/app.css",
+      "bytes": 24703,
+      "sha256": "4d9ee189c110d5bd02421b2c1ac18e25a2f60b161bf1f46b05f5a2bf2d6a9534"
+    },
+    {
+      "path": "public/images/logo.svg",
+      "bytes": 375,
+      "sha256": "92317d0de2a489e78a726f76eed181757ae1a147e3180acdef579fbd9159fa97"
+    },
+    {
+      "path": "public/index.php",
+      "bytes": 2839,
+      "sha256": "edd708e1906851482a764543da213eb4a05d7c7fdf05624b3fa350bc9128c8f1"
+    },
+    {
+      "path": "public/js/api.js",
+      "bytes": 1813,
+      "sha256": "a0e04dc9f3054b1c8f110839b77158a314bfb78e13e99d271e8ecace09c154d9"
+    },
+    {
+      "path": "public/js/app.js",
+      "bytes": 34713,
+      "sha256": "d22236ee7338a8be020d4d2d72a4101ddb7102d96288f1b55100ceb2d5a5d010"
+    },
+    {
+      "path": "public/js/dashboard.js",
+      "bytes": 8633,
+      "sha256": "c482b7ed5fee8af760c605a1bae82c8e3b0244c4a6c3f7bc2cb55fa8c5569140"
+    },
+    {
+      "path": "public/js/forms.js",
+      "bytes": 7171,
+      "sha256": "45f6d4e90e09df87ca940c99cae0a6c37d65150411db723cda137b6e926aa38b"
+    },
+    {
+      "path": "public/js/icons.js",
+      "bytes": 3427,
+      "sha256": "1302ebbb74ae817ab0de287b34569ec0e5b1efb5e9ade4b6fa250e89a31e6898"
+    },
+    {
+      "path": "public/router.php",
+      "bytes": 308,
+      "sha256": "9c991f902a4818451ab3bfdcb5971fcba0aa6d015a552b3f35096b3604da66d1"
+    },
+    {
+      "path": "resources/views/app.php",
+      "bytes": 706,
+      "sha256": "48c2ac4cc8754029925edc8fa1eb3cc6793ac90835c08700bed3a2a7e13b2483"
+    },
+    {
+      "path": "scripts/console.php",
+      "bytes": 2801,
+      "sha256": "c5cd3c8e5b367e59d42778ceed055368889337687eb8a42d1742a1b7079b13d2"
+    },
+    {
+      "path": "scripts/health.php",
+      "bytes": 853,
+      "sha256": "85ce40a46889dd1852050ac5e7fce1789bafd072708f7bde9b14944c0eb507ad"
+    },
+    {
+      "path": "scripts/install-ubuntu.sh",
+      "bytes": 10914,
+      "sha256": "354a792426d3e3e44c5bb74088dfdb059a9f19c5a413262ca050899befa37025"
+    },
+    {
+      "path": "scripts/register-local-server.php",
+      "bytes": 1087,
+      "sha256": "03144e1f95a4e92dc3f20ec5d12e32dc9e5142628399cb35a1a7db355f7a5c5b"
+    },
+    {
+      "path": "scripts/update.sh",
+      "bytes": 3380,
+      "sha256": "a7d9b3ee7eb07873805587b0be0fe4606e14ac49c2db3f28d71ca32c3403217a"
+    }
+  ]
+}

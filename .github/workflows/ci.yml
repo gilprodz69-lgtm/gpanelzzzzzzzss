@@ -1,0 +1,43 @@
+name: Validate VPS Manager
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: ci-test-only-password
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test dependencies
+        run: sudo apt-get update && sudo apt-get install -y php8.3-cli php8.3-sqlite3 php8.3-mysql php8.3-curl php8.3-mbstring
+      - name: PHP syntax
+        run: find app database public scripts -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: SQLite integration
+        run: php tests/run.php
+      - name: MariaDB integration
+        env:
+          DB_USER: root
+          DB_PASSWORD: ci-test-only-password
+          TEST_MYSQL_PORT: 3307
+        run: php tests/mysql.php
+      - name: Agent tests
+        run: python3 tests/test_agent.py
+      - name: Installer syntax and payload
+        run: |
+          bash -n install.sh scripts/install-ubuntu.sh scripts/update.sh
+          sudo env VPM_VERIFY_ONLY=1 bash install.sh
+      - name: Validate distribution manifest
+        run: python3 tests/test_release.py

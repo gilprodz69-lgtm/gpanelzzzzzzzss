@@ -1,0 +1,13 @@
+.env
+.tools/
+storage/*.sqlite*
+storage/*.json
+storage/LOCAL-ACCESS.txt
+storage/logs/*
+storage/backups/*
+storage/cache/*
+!**/.gitkeep
+__pycache__/
+*.pyc
+node_modules/
+test-results/

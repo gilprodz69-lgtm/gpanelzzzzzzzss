@@ -1,0 +1,22 @@
+[Unit]
+Description=VPS Manager operation queue
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vpsmanager
+Group=vpsmanager
+WorkingDirectory=/opt/vpsmanager/current
+ExecStart=/usr/bin/php /opt/vpsmanager/current/scripts/console.php worker
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/vpsmanager/shared/storage
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
