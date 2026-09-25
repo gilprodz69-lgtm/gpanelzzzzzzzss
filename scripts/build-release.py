@@ -99,7 +99,7 @@ installer_digest = hashlib.sha256(installer.encode()).hexdigest()
 (DIST / 'SHA256SUMS').write_text(f'{digest}  {archive_name}\n{installer_digest}  ../install.sh\n', encoding='utf-8', newline='\n')
 (DIST / 'release-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
 # Public repository upload list is separate from the production runtime bundle.
-publish = set(paths + [ROOT / '.gitignore', ROOT / 'package.json', ROOT / 'package-lock.json', ROOT / 'install.sh', ROOT / 'scripts/build-release.py', ROOT / 'scripts/dev.ps1', ROOT / 'scripts/verify.ps1'])
+publish = set(paths + [ROOT / '.gitignore', ROOT / 'package.json', ROOT / 'package-lock.json', ROOT / 'install.sh', ROOT / 'scripts/build-release.py', ROOT / 'scripts/vendor-editor.mjs', ROOT / 'scripts/dev.ps1', ROOT / 'scripts/verify.ps1'])
 publish.update(p for p in (ROOT / 'tests').rglob('*') if p.is_file() and '__pycache__' not in p.parts)
 publish.update(p for p in (ROOT / '.github').rglob('*') if p.is_file())
 publish.update([DIST / archive_name, DIST / 'SHA256SUMS', DIST / 'release-manifest.json'])

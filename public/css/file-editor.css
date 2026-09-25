@@ -1,0 +1,37 @@
+/* The editor keeps the light, full-window appearance of the reference. */
+#modal.fm-editor-dialog{position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;overflow:hidden;background:#fff;color:#37474f;box-shadow:none;color-scheme:light}
+#modal.fm-editor-dialog::backdrop{background:#fff;backdrop-filter:none}
+.code-workspace{position:relative;display:flex;flex-direction:column;height:100%;min-height:0;background:#fff;font:14px/1.4 "Segoe UI",Arial,sans-serif}
+.code-workspace [hidden]{display:none!important}
+.code-header{display:flex;align-items:center;gap:18px;flex:0 0 64px;padding:0 16px;box-shadow:0 1px 4px #0000000d;z-index:2}
+.code-header h2{flex:1;min-width:0;margin:0 0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:20px;font-weight:400;letter-spacing:.2px;color:#333}
+.code-header button,.code-tools button,.code-menu button{display:inline-flex;align-items:center;justify-content:center;padding:8px;width:34px;height:34px;border:0;border-radius:3px;background:none;color:#546e7a}
+.code-header button:hover,.code-tools button:hover,.code-menu button:hover{background:#eef1f3}
+.code-header button .icon{width:20px;height:20px}
+.code-font{display:flex;align-items:center;gap:10px}
+.code-font output{min-width:32px;text-align:center;color:#333}
+.code-font [data-code=smaller]{font-size:25px;font-weight:300}
+.code-header [data-code=save] .icon{fill:#546e7a;stroke:white;stroke-width:1.4}
+.code-dirty{color:#168bee;font-size:10px}
+.code-status{font-size:11px;color:#617984;max-width:200px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
+.code-subheader{display:flex;align-items:center;flex:0 0 36px;background:#fafafa;border-bottom:1px solid #eee;padding:0 6px 0 18px;gap:10px}
+.code-subheader nav{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:auto;white-space:nowrap;color:#587789;font-size:12px;scrollbar-width:none}
+.code-subheader nav .icon{width:14px;height:14px}
+.code-separator{color:#76909b}
+.code-tools{display:flex;align-items:center;gap:0}
+.code-tools button{width:30px;height:30px;color:#8196a0}
+.code-tools .icon{width:17px;height:17px}
+.code-tools [data-code=menu] .icon{transform:rotate(90deg)}
+.code-menu{position:absolute;right:8px;top:98px;z-index:10;padding:5px;min-width:220px;background:#fff;border:1px solid #d9e0e4;border-radius:4px;box-shadow:0 5px 20px #0002}
+.code-menu button{width:100%;gap:12px;justify-content:flex-start;font-size:13px;white-space:nowrap}
+.code-menu button::after{content:attr(aria-label)}
+.code-menu button[aria-pressed=true]{background:#e7f1ff;color:#1259bc}
+.code-error{flex-shrink:0;padding:8px 18px;background:#fff1f1;color:#ad2340;font-size:12px}
+.code-surface{position:relative;flex:1;min-height:0;width:100%;font-size:14px;line-height:normal;text-align:left}
+.code-surface .ace_string{color:#0000ff}
+.code-surface .ace_keyword,.code-surface .ace_storage{color:#af00db}
+.code-surface .ace_comment{color:#008000}
+.code-surface .ace_variable{color:#0087a8}
+.code-surface .ace_text-input:focus{outline:none}
+body:has(#modal.fm-editor-dialog[open]){overflow:hidden}
+@media(max-width:600px){.code-header{flex-basis:54px;gap:4px;padding:0 7px}.code-header h2{font-size:16px;margin-left:4px}.code-font{gap:1px}.code-header button{width:30px}.code-status{position:absolute;bottom:6px;right:20px;z-index:9;background:#fffffff0;padding:2px 6px;border-radius:3px}.code-subheader{padding-left:9px}.code-menu{top:88px}}

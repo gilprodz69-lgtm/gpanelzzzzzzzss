@@ -1,5 +1,5 @@
 {
-  "version": "0.2.2-preview",
+  "version": "0.2.3-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "574392d535364e4db87a41d825df85c92aa96185b0551ca2b98f9b87e474eeeb"
+      "sha256": "d13ca72b2904d0dd005913e1b8b839be0f4ad1961109c8b980170a2f4271f5ca"
     },
     {
       "path": "agent/files.py",
@@ -268,13 +268,18 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 5733,
-      "sha256": "702fcd522008488c12b3f3f7709aedb760f7c5046ad9db22837df2205a45c388"
+      "bytes": 5862,
+      "sha256": "4fef54660b905e99ceae74a3b467119895ec3f3a8f4794f0b4f9ef9a5885458a"
     },
     {
       "path": "public/css/app.css",
       "bytes": 24703,
       "sha256": "4d9ee189c110d5bd02421b2c1ac18e25a2f60b161bf1f46b05f5a2bf2d6a9534"
+    },
+    {
+      "path": "public/css/file-editor.css",
+      "bytes": 3509,
+      "sha256": "def7ef8e40c9ab58f1e975295f5b2b760c465c6a241cdb0b69b1fbe7b27db9fc"
     },
     {
       "path": "public/css/file-manager.css",
@@ -312,9 +317,14 @@
       "sha256": "0a87b65542bb43570f6e03dc9b73bd48fb2300f53bd43243340b2fd6c8591555"
     },
     {
+      "path": "public/js/file-editor.js",
+      "bytes": 8826,
+      "sha256": "ec185488717b1629c40ddea84aee379ad8ababf3b74aa27b8a48c3ec1a3464dc"
+    },
+    {
       "path": "public/js/file-manager.js",
-      "bytes": 19833,
-      "sha256": "79884604ad43d6b969f27269450cd8c5c1eb70a7dfc51ddd9c0592c3d4d150bf"
+      "bytes": 20101,
+      "sha256": "c1d75a20da6c9a13bf20a3691a796d1f00a15bdd1e94b5f760cad3b06f11a0c4"
     },
     {
       "path": "public/js/forms.js",
@@ -323,18 +333,123 @@
     },
     {
       "path": "public/js/icons.js",
-      "bytes": 4744,
-      "sha256": "415c664de2a7af9d50ea088163139edcd943e589d382930293947ff8355a4298"
+      "bytes": 5060,
+      "sha256": "c2e90ccc600947a54ebde13426bea016884d7aa4e0d9d366514e893df65f02e2"
     },
     {
       "path": "public/router.php",
-      "bytes": 308,
-      "sha256": "9c991f902a4818451ab3bfdcb5971fcba0aa6d015a552b3f35096b3604da66d1"
+      "bytes": 319,
+      "sha256": "1d9f27dd3c3c03894f78908280f8fa0d8883b8c446570cb49f13dbca7e2cc769"
+    },
+    {
+      "path": "public/vendor/ace/LICENSE",
+      "bytes": 1490,
+      "sha256": "850f545c5254e8c08204edb2a6d50bbb72727c38a82982c17a84bebf6064cdf8"
+    },
+    {
+      "path": "public/vendor/ace/README.md",
+      "bytes": 602,
+      "sha256": "ec7e414e8df57064f2855bd9813d0d370997e15c4c3ca4fe8d7314b8d99429b6"
+    },
+    {
+      "path": "public/vendor/ace/VERSION",
+      "bytes": 7,
+      "sha256": "eb10cb79829ed5bf2eae31d5cb79806d3ebef533bd220fb63c56c9de378a3a29"
+    },
+    {
+      "path": "public/vendor/ace/ace.js",
+      "bytes": 907754,
+      "sha256": "33ca941da5473095e2346ff684b64715ba7e609a206668760630c523ed7e9f43"
+    },
+    {
+      "path": "public/vendor/ace/editor.css",
+      "bytes": 39522,
+      "sha256": "ba44e1021826f7d7b5059fce3af8c92f63706b7de3ee634d993f641aa6d103ef"
+    },
+    {
+      "path": "public/vendor/ace/ext-searchbox.js",
+      "bytes": 20667,
+      "sha256": "5e62da69209c736414402d730658696733617d85b2fe426236c98f1f330b0666"
+    },
+    {
+      "path": "public/vendor/ace/mode-css.js",
+      "bytes": 32999,
+      "sha256": "24787dc5be47e0dd014403e15901d75316cc882bec441cb61648a95a300740fd"
+    },
+    {
+      "path": "public/vendor/ace/mode-html.js",
+      "bytes": 107535,
+      "sha256": "b8abff8dad88292751aed583b5e41dc3d8494fd9151b0486a111194096ab133f"
+    },
+    {
+      "path": "public/vendor/ace/mode-ini.js",
+      "bytes": 5388,
+      "sha256": "981c4df2471437d9eeaee59bf00be083c51a246be1b1b1a2a40e8c1e440b13b5"
+    },
+    {
+      "path": "public/vendor/ace/mode-javascript.js",
+      "bytes": 51279,
+      "sha256": "81864430ed3a6a4b6490b04f3f53d02c127ad339a004efbb4e4f4d34709fa98a"
+    },
+    {
+      "path": "public/vendor/ace/mode-json.js",
+      "bytes": 10484,
+      "sha256": "812ca1e1631d61f821cb2ccb293b17eaf2177cdcb5cab3a8e05decd7d7562b8b"
+    },
+    {
+      "path": "public/vendor/ace/mode-markdown.js",
+      "bytes": 130877,
+      "sha256": "3db8d1fd76e4080fd2fd2a764c7bbeff02b68184119b2ff4170828f7c771a002"
+    },
+    {
+      "path": "public/vendor/ace/mode-php.js",
+      "bytes": 645495,
+      "sha256": "eec63b93bce40950072299c28f5a2db5a1805e14832981b155006721e8d46067"
+    },
+    {
+      "path": "public/vendor/ace/mode-python.js",
+      "bytes": 16876,
+      "sha256": "b7f6052dd7ab452774e90efed6c05cb0f3e464ddc2b72ec181b94112457b99cc"
+    },
+    {
+      "path": "public/vendor/ace/mode-sh.js",
+      "bytes": 15449,
+      "sha256": "e50c0d26e0b2dd877c9fe3c767f3f666d4ea4764bafaee9aad4b7c5cf1ff11b6"
+    },
+    {
+      "path": "public/vendor/ace/mode-sql.js",
+      "bytes": 9195,
+      "sha256": "7d3024120a90893c0bf6e7a24f0d409685be4438f3598400ea8873bd4ce465b1"
+    },
+    {
+      "path": "public/vendor/ace/mode-text.js",
+      "bytes": 326,
+      "sha256": "1f57b967ef69f1501ae76cf5497e9f914bddf39ba2ec51174b6de11ddcd52ef7"
+    },
+    {
+      "path": "public/vendor/ace/mode-typescript.js",
+      "bytes": 54039,
+      "sha256": "da8ed47d5ca4baca56f765272376f29ad8c4102cd82d8f6981faf33c64bdbaad"
+    },
+    {
+      "path": "public/vendor/ace/mode-xml.js",
+      "bytes": 20093,
+      "sha256": "5be8fbec46704fe2997b28622a76d935eaf104c58eb5efbd641bc81ff9c0bb55"
+    },
+    {
+      "path": "public/vendor/ace/mode-yaml.js",
+      "bytes": 14729,
+      "sha256": "202fbe23e835868b9dd902d5a60961e3645f028b150b022c9f881a311ffdaca7"
+    },
+    {
+      "path": "public/vendor/ace/theme-chrome.js",
+      "bytes": 4002,
+      "sha256": "9226c11489574f3fabcfaca1b94dbff61f4c96b8003249779c77da137053c41c"
     },
     {
       "path": "resources/views/app.php",
-      "bytes": 809,
-      "sha256": "f892584f0bcab3d934404affd2b7adef6642c620ec67ea2b9e7a29692f1c6a33"
+      "bytes": 863,
+      "sha256": "a46800bfa6390f10fa16076dffb8a606f5498dc5586a0af330e6f9f84036b466"
     },
     {
       "path": "scripts/console.php",

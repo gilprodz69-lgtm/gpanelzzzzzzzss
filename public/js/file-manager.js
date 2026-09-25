@@ -1,5 +1,6 @@
 import {api,esc,date} from './api.js';
 import {icon} from './icons.js';
+import {openFileEditor} from './file-editor.js';
 const sizes=n=>n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(1)} MB`;
 const labels={edit:'Editar',rename:'Renomear',copy:'Copiar',move:'Mover',trash:'Mover para lixeira',download:'Baixar',info:'Informações',chmod:'Permissões',zip:'Compactar',unzip:'Extrair ZIP',restore:'Restaurar',purge:'Excluir definitivamente'};
 const fileType=r=>r.directory?'Pasta':/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(r.name)?'Imagem':/\.php$/i.test(r.name)?'Arquivo PHP':/\.zip$/i.test(r.name)?'Arquivo ZIP':/\.xml$/i.test(r.name)?'Arquivo XML':'Arquivo';
@@ -67,7 +68,23 @@ export function bindFileManager({showModal,modal,formShell,bindForm,toast}){
   if(name==='download'){if(!selected.size)throw new Error('Selecione arquivos para baixar.');busy=true;try{for(const r of keys())await download(r);}finally{busy=false;progress('');}return;}
   const r=single(),source=join(r.name);
   if(name==='open'){if(r.directory){path=source;await refresh();return;}name='edit';}
-  if(name==='edit'){if(r.directory)throw new Error('Selecione um arquivo de texto.');const result=await request('read',{path:source});let content;try{const bytes=Uint8Array.from(atob(result.content),c=>c.charCodeAt(0));content=new TextDecoder('utf-8',{fatal:true}).decode(bytes);if(content.includes('\0'))throw new Error();}catch{throw new Error('Arquivo binário: use Baixar.');}prompt('Editar '+r.name,`<label>Conteúdo<textarea name="content" class="input fm-editor" spellcheck="false">${esc(content)}</textarea></label>`,async v=>{const bytes=new TextEncoder().encode(v.content);if(bytes.length>1048576)throw new Error('Limite de edição: 1 MB.');let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));await request('write',{path:source,content:btoa(text)});});return;}
+  if(name==='edit'){
+   if(r.directory)throw new Error('Selecione um arquivo de texto.');
+   if(bin)throw new Error('Restaure o arquivo antes de editar.');
+   const websiteId=+$('#fm-site').value;
+   busy=true;
+   try{
+    const result=await request('read',{path:source});let content;
+    try{const bytes=Uint8Array.from(atob(result.content),c=>c.charCodeAt(0));content=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);if(content.includes('\0'))throw new Error();}catch{throw new Error('Arquivo bin\u00e1rio: use Baixar.');}
+    if(!el.isConnected)return;
+    await openFileEditor({modal,name:r.name,path:source,content,save:async value=>{
+     const bytes=new TextEncoder().encode(value);let binary='';
+     for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+     await api('/files',{method:'POST',body:{website_id:websiteId,action:'write',path:source,content:btoa(binary)}});
+    },onClose:async()=>{if(el.isConnected)await refresh();}});
+   }finally{busy=false;}
+   return;
+  }
   if(name==='info'){const info=await request('info',{path:source});showModal('Informações',`<p><strong>${esc(r.name)}</strong></p><p>Tamanho: ${sizes(info.size)}</p><p>Itens: ${info.items}</p><p>Permissões: ${esc(info.mode)}</p><p>Alterado: ${date(info.modified)}</p>`);return;}
   if(name==='chmod'){prompt('Permissões',`<label>Permissões<select class="input" name="mode">${['600','640','644','700','750','755'].map(m=>`<option ${m===r.mode?'selected':''}>${m}</option>`).join('')}</select></label>`,v=>request('chmod',{path:source,mode:v.mode}));return;}
   const targets={rename:source,copy:source+'.copy',move:source,zip:source+'.zip',unzip:source.replace(/\.zip$/i,'')+'-extraido'};
