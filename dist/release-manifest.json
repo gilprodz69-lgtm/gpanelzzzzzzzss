@@ -1,5 +1,5 @@
 {
-  "version": "0.2.8-preview",
+  "version": "0.2.9-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "dc980b451ef94b50a14336922d5cfd61624cda86b73353b5655f63ae682084c8"
+      "sha256": "277f0019ba6c310962bdbafd483d5d2293ccc88f63065eeae4770dcebf47aca5"
     },
     {
       "path": "agent/files.py",
@@ -497,6 +497,11 @@
       "sha256": "1945282d4e160ae7c45f798b2e3cc40eb6adc197ee77c4295dccea41c46ca81d"
     },
     {
+      "path": "scripts/apt-safe.sh",
+      "bytes": 1580,
+      "sha256": "443c5efbd3ea1e082f7c681a1406b80263aaa823ee03484f11708a0def1c6eb8"
+    },
+    {
       "path": "scripts/console.php",
       "bytes": 3222,
       "sha256": "79a91d14c0a4ab7efc4d8c61daf99ba27e418deb539111cc25a432ab578be7d5"
@@ -508,13 +513,13 @@
     },
     {
       "path": "scripts/install-runtime.sh",
-      "bytes": 3786,
-      "sha256": "1d774945bfd8f9c71e024452aa56bcfd3159cb3a7196dad3536929a6771f312b"
+      "bytes": 3853,
+      "sha256": "99382ff803b942a28d565aa8188a15bc926bcf1062d69e88b47ec089785c984e"
     },
     {
       "path": "scripts/install-ubuntu.sh",
-      "bytes": 11159,
-      "sha256": "0de64fd6381828056d33fe10fb91ebe0d78e6593860882be469bac412a6907ab"
+      "bytes": 11213,
+      "sha256": "9a97a04b4fd25ea4b0b68367785f42b50e345247355f61673c77ec502edf3ea7"
     },
     {
       "path": "scripts/panel-certificate.py",

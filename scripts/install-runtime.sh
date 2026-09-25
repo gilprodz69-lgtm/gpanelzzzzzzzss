@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y software-properties-common ca-certificates python3-venv
-add-apt-repository -y ppa:ondrej/php
-apt-get update
+source "$(dirname -- "${BASH_SOURCE[0]}")/apt-safe.sh"
+vpm_apt update
+vpm_apt install -y software-properties-common ca-certificates python3-venv
+add-apt-repository --no-update -y ppa:ondrej/php
+vpm_apt update
 packages=()
 for version in 7.4 8.0 8.1 8.2 8.3 8.4; do
     for extension in cli fpm mysql curl mbstring xml zip gd intl bcmath soap sqlite3; do
         packages+=("php${version}-${extension}")
     done
 done
-apt-get install -y "${packages[@]}"
+vpm_apt install -y "${packages[@]}"
 for version in 7.4 8.0 8.1 8.2 8.3 8.4; do
     systemctl enable --now "php${version}-fpm"
 done
@@ -22,7 +23,7 @@ python3 -m venv /opt/vpsmanager/acme
 /opt/vpsmanager/acme/bin/pip install --disable-pip-version-check 'certbot>=5.4,<6'
 echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect' | debconf-set-selections
 echo 'phpmyadmin phpmyadmin/dbconfig-install boolean false' | debconf-set-selections
-apt-get install -y --no-install-recommends phpmyadmin
+vpm_apt install -y --no-install-recommends phpmyadmin
 id vpm-pma >/dev/null 2>&1 || useradd --system --user-group --no-create-home --shell /usr/sbin/nologin vpm-pma
 install -d -o vpm-pma -g vpm-pma -m 0700 /var/lib/vpsmanager-pma
 install -d -m 0755 /var/lib/vpsmanager-acme

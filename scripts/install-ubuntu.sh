@@ -49,16 +49,17 @@ stage='dependências'
 trap 'echo "Instalação interrompida na etapa: $stage. Consulte /var/log/vpsmanager/install.log. Não execute novamente sem verificar o estado." >&2' ERR
 echo "Instalando VPS Manager em Ubuntu $VERSION_ID; painel HTTPS na porta $PANEL_PORT."
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y ca-certificates curl openssl rsync software-properties-common
+source "$project_dir/scripts/apt-safe.sh"
+vpm_apt update
+vpm_apt install -y ca-certificates curl openssl rsync software-properties-common
 if [[ "$VERSION_ID" == 22.04 ]]; then
     # Ubuntu 22.04 ships PHP 8.1; this documented repository provides PHP 8.3.
-    add-apt-repository -y ppa:ondrej/php
-    apt-get update
+    add-apt-repository --no-update -y ppa:ondrej/php
+    vpm_apt update
 fi
-apt-get install -y nginx mariadb-server python3 openssh-server ufw cron
+vpm_apt install -y nginx mariadb-server python3 openssh-server ufw cron
 bash "$project_dir/scripts/install-runtime.sh"
-if [[ ${INSTALL_DOCKER:-1} == 1 ]]; then apt-get install -y docker.io; fi
+if [[ ${INSTALL_DOCKER:-1} == 1 ]]; then vpm_apt install -y docker.io; fi
 php8.3 -r 'if (PHP_VERSION_ID < 80300 || !extension_loaded("sodium") || !extension_loaded("pdo_mysql")) exit(1);'
 stage='arquivos e contas do sistema'
 id vpsmanager >/dev/null 2>&1 || useradd --system --user-group --home-dir /opt/vpsmanager --shell /usr/sbin/nologin vpsmanager

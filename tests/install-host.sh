@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 [[ ${GITHUB_ACTIONS:-} == true && $EUID -eq 0 ]] || exit 1
+python3 tests/test_apt.py
 # This VM is disposable and contains no customer data.
 systemctl stop nginx apache2 mysql mariadb docker docker.socket 2>/dev/null || true
 if dpkg-query -W -f='${Status}' mysql-server 2>/dev/null | grep -q 'install ok installed'; then
