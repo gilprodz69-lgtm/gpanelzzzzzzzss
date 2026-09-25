@@ -406,9 +406,20 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
 
     def files(self, p):
         import pwd
+        import grp
         s = self.find('site', p, 'website_id'); account = pwd.getpwnam(s['username'])
         private = Path(s['home']) / '.file-manager'
         private.mkdir(mode=0o700, exist_ok=True); os.chown(private, account.pw_uid, account.pw_gid)
+        private_fd=os.open(private, os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+        try:
+            try: os.mkdir('uploads', mode=0o2700, dir_fd=private_fd)
+            except FileExistsError: pass
+            uploads_fd=os.open('uploads', os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW, dir_fd=private_fd)
+            try:
+                os.fchown(uploads_fd, account.pw_uid, grp.getgrnam('www-data').gr_gid)
+                os.fchmod(uploads_fd, 0o2700)
+            finally: os.close(uploads_fd)
+        finally: os.close(private_fd)
         return unprivileged(account, lambda: files.operate(s['public'], p, private))
 
     def create_backup(self, p):

@@ -41,6 +41,29 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         ops.files({**files,'action':'upload_chunk','id':token,'offset':0,'content':'aGVsbG8='})
         ops.files({**files,'action':'upload_finish','id':token})
         assert fetch(p['domain'],'/uploaded.txt').endswith(b'hello')
+        if index==1:
+            import tempfile,zipfile,hashlib
+            with tempfile.TemporaryFile() as source:
+                with zipfile.ZipFile(source,'w',zipfile.ZIP_STORED) as archive:
+                    with archive.open('payload.bin','w') as data:
+                        for _ in range(101):data.write(b'a'*1048576)
+                size=source.tell();source.seek(0);expected=hashlib.file_digest(source,'sha256').hexdigest();source.seek(0)
+                transfer=ops.files({**files,'action':'upload_begin','path':'large.zip','size':size})['id'];offset=0
+                while chunk:=source.read(1048576):
+                    ops.files({**files,'action':'upload_chunk','id':transfer,'offset':offset,'content':base64.b64encode(chunk).decode()});offset+=len(chunk)
+                ops.files({**files,'action':'upload_finish','id':transfer})
+            site=ops.find('site',files,'website_id');zip_path=Path(site['public'])/'large.zip'
+            with zip_path.open('rb') as data:assert hashlib.file_digest(data,'sha256').hexdigest()==expected
+            ops.files({**files,'action':'unzip','path':'large.zip','target':'large-extracted'})
+            assert (Path(site['public'])/'large-extracted/payload.bin').stat().st_size==101*1048576
+            # Nginx must retain read access after the atomic upload publication.
+            import grp
+            assert zip_path.stat().st_gid==grp.getgrnam('www-data').gr_gid
+            for path in ['large.zip','large-extracted']:
+                ops.files({**files,'action':'trash','path':path})
+            for item in ops.files({**files,'action':'trash_list'})['data']:
+                ops.files({**files,'action':'purge','id':item['id']})
+            print('PASS 101 MiB ZIP upload and extraction under isolated site user, integrity and web group',flush=True)
         ops.files({**files,'action':'trash','path':'uploaded.txt'})
         item=ops.files({**files,'action':'trash_list'})['data'][0]
         ops.files({**files,'action':'restore','id':item['id']})

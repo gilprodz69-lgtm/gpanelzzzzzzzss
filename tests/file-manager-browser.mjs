@@ -21,7 +21,7 @@ await page.route('**/api/v1/files',async route=>{
  if(body.action==='upload_begin')result={id:'b'.repeat(32)};
  await route.fulfill({json:result});
 });
-await page.locator('[data-route=files]').click();await page.locator('[data-entry="assets"]').waitFor();
+await page.locator('[data-route=files]').click();await page.locator('[data-site="800"]').click();await page.locator('.fm-site-home [data-fm=public]').click();await page.locator('[data-entry="assets"]').waitFor();
 await page.screenshot({path:'test-results/file-manager-desktop.png',fullPage:true});
 await page.locator('[data-entry="assets"] [data-check]').check();await page.locator('[data-entry="index.php"] [data-check]').check();assert.equal(await page.locator('[data-entry].selected').count(),2);
 await page.locator('.fm-sidebar [data-fm=invert]').click();assert.equal(await page.locator('[data-entry].selected').count(),0);
@@ -31,7 +31,7 @@ await page.locator('[data-fm=grid]').click();assert(await page.locator('#fm-list
 await page.locator('[data-entry="assets"]').dblclick();await page.locator('#fm-breadcrumbs [data-path="assets"]').waitFor();
 assert(calls.some(c=>c.action==='list'&&c.path==='assets'));
 await page.locator('[data-fm=back]').click();await page.locator('[data-entry="index.php"]').waitFor();await page.locator('[data-fm=forward]').click();await page.locator('#fm-breadcrumbs [data-path="assets"]').waitFor();
-await page.locator('#fm-breadcrumbs [data-fm=home]').click();
+await page.locator('#fm-breadcrumbs [data-fm=public]').click();
 await page.locator('[data-entry="index.php"]').dblclick();
 await page.locator('#modal.fm-editor-dialog').waitFor();
 await page.locator('#file-code-surface .ace_text-input').focus();
@@ -41,7 +41,7 @@ assert(calls.some(c=>c.action==='write'&&Buffer.from(c.content,'base64').toStrin
 await page.getByRole('button',{name:'Fechar editor',exact:true}).click();
 await page.locator('#modal').waitFor({state:'hidden'});
 await page.locator('[data-entry="index.php"]').click({button:'right'});await page.locator('#fm-context [data-fm=rename]').click();await page.locator('dialog input[name=target]').fill('main.php');await page.locator('dialog button[type=submit]').click();await page.locator('[data-entry="main.php"]').waitFor();
-await page.locator('[data-entry="main.php"]').click();await page.locator('#fm-selection [data-fm=trash]').click();await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});await page.locator('.fm-sidebar [data-fm=bin]').click();await page.locator('[data-entry="'+ 'a'.repeat(32)+'"]').click();await page.locator('#fm-selection [data-fm=restore]').click();await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});await page.locator('.fm-sidebar [data-fm=home]').click();await page.locator('[data-entry="main.php"]').waitFor();
+await page.locator('[data-entry="main.php"]').click();await page.locator('#fm-selection [data-fm=trash]').click();await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});await page.locator('.fm-sidebar [data-fm=bin]').click();await page.locator('[data-entry="'+ 'a'.repeat(32)+'"]').click();await page.locator('#fm-selection [data-fm=restore]').click();await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});await page.locator('.fm-sidebar [data-fm=public]').click();await page.locator('[data-entry="main.php"]').waitFor();
 await page.locator('#fm-upload').setInputFiles({name:'binary.dat',mimeType:'application/octet-stream',buffer:Buffer.alloc(1500000,65)});await page.getByText('Upload concluído.',{exact:true}).waitFor();assert.equal(calls.filter(c=>c.action==='upload_chunk').length,2);assert(calls.some(c=>c.action==='upload_finish'));
 for(const width of [1920,1024,768,390]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'overflow '+width);}
 await page.screenshot({path:'test-results/file-manager-mobile.png',fullPage:true});

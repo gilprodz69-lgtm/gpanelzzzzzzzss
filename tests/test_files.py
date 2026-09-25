@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 import zipfile
+import hashlib
+from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'agent'))
 from files import operate
 from validation import Rejected
@@ -37,6 +39,40 @@ class FileTests(unittest.TestCase):
         with self.assertRaises(Rejected): self.call('upload_finish', id=token)
         self.call('upload_cancel', id=token)
         self.assertFalse((self.root/'new').exists())
+    def test_large_zip_transfer_copy_extract(self):
+        # A real ZIP above the previous 100 MiB limit; no allocation of the whole file.
+        source=Path(self.tmp.name)/'source.zip'
+        block=b'large-file-test\x00'*65536
+        with zipfile.ZipFile(source,'w',zipfile.ZIP_STORED) as archive:
+            with archive.open('payload.bin','w') as stream:
+                for _ in range(108):stream.write(block)
+        size=source.stat().st_size;self.assertGreater(size,100*1024*1024)
+        token=self.call('upload_begin',path='large.zip',size=size)['id']
+        with source.open('rb') as stream:
+            offset=0
+            while chunk:=stream.read(1048576):
+                self.call('upload_chunk',id=token,offset=offset,content=base64.b64encode(chunk).decode());offset+=len(chunk)
+        with patch('files.shutil.copyfileobj',side_effect=AssertionError('Same-device upload must not copy')):
+            self.call('upload_finish',id=token)
+        with source.open('rb') as stream:expected=hashlib.file_digest(stream,'sha256').hexdigest()
+        digest=hashlib.sha256();offset=0
+        while offset<size:
+            chunk=base64.b64decode(self.call('download',path='large.zip',offset=offset)['content']);digest.update(chunk);offset+=len(chunk)
+        self.assertEqual(expected,digest.hexdigest())
+        self.call('unzip',path='large.zip',target='extracted')
+        self.assertEqual((self.root/'extracted/payload.bin').stat().st_size,len(block)*108)
+        self.call('zip',path='extracted',target='repacked.zip')
+        self.call('copy',path='large.zip',target='copy.zip')
+        self.assertEqual(self.call('info',path='copy.zip')['size'],size)
+    def test_upload_storage_validation_and_cancel(self):
+        for size in [-1,True,'100',1.5]:
+            with self.assertRaises(Rejected):self.call('upload_begin',path='file.zip',size=size)
+        with patch('files.shutil.disk_usage') as usage:
+            usage.return_value.free=10
+            with self.assertRaisesRegex(Rejected,'Espaço'):self.call('upload_begin',path='file.zip',size=11)
+        token=self.call('upload_begin',path='large.zip',size=101*1024*1024)['id']
+        self.call('upload_cancel',id=token)
+        self.assertEqual(list((self.private/'uploads').iterdir()),[])
     def test_trash_restore_and_purge_folder(self):
         self.call('mkdir', path='assets'); (self.root/'assets/a.txt').write_text('contents')
         self.call('trash', path='assets')

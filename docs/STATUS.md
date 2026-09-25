@@ -19,7 +19,7 @@ Esta é uma versão de desenvolvimento instalável, não a conclusão integral d
 | Domínios | Alias, estacionado e redirecionamento | Edição e integração completa de certificados multi-domínio |
 | SSL | HTTPS automático nos novos sites; Certbot 5.4+ para domínio/IPv4 e renovação a cada 6 horas, certificado local se ACME falhar | Revogação/remoção coordenada e alertas por validade |
 | Bancos | Criação/remoção, usuário dedicado, troca de senha, conexão e phpMyAdmin com importação/exportação/SQL | Usuários adicionais e backup automatizado de banco |
-| Arquivos | UI com lista/grade, busca, seleção, contexto, copiar/mover, ZIP/UNZIP, permissões, download, uploads em partes até 100 MB e lixeira com restauração; editor em tela cheia com sintaxe, indentação, blocos recolhíveis, busca/substituição, desfazer/refazer e salvamento por Ctrl+S | Edição limitada a 1 MB; operações recursivas limitadas a 5000 itens / 100 MB |
+| Arquivos | Seleção explícita de site → public_html; lista/grade, busca, seleção, contexto, copiar/mover, ZIP/UNZIP, permissões, download, uploads em partes sem limite fixo de 100 MB e lixeira; editor em tela cheia | Edição limitada a 1 MB; espaço disponível e tempo de execução do agente limitam operações interativas |
 | SFTP | Criação/remover conta em chroot por site | Gestão avançada de credenciais; FTP opcional |
 | Backups | Arquivos do site, SHA256, restauração, agendamento diário/semanal/mensal e retenção por API | Agenda na UI, bancos/backup completo, S3/Backblaze/Google Cloud |
 | Firewall | UFW com proteção de portas essenciais e operações via fila | CIDR, IPv6 completo na UI e rollback temporizado de regras |

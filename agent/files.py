@@ -7,25 +7,21 @@ import zipfile
 import json
 import time
 import uuid
+import errno
 from pathlib import Path
 from validation import inside, choice, Rejected
 
 MAX_FILE = 1024 * 1024
-MAX_ARCHIVE = 100 * 1024 * 1024
 
 
 def bounded_tree(path):
     entries = [path]
-    total = 0
     for parent, directories, names in os.walk(path, followlinks=False) if path.is_dir() else []:
         for name in directories + names:
             entry = Path(parent) / name
             if entry.is_symlink():
                 raise Rejected('Symbolic links are not accessible')
             entries.append(entry)
-            total += entry.stat().st_size if entry.is_file() else 0
-            if len(entries) > 5000 or total > MAX_ARCHIVE:
-                raise Rejected('Operation exceeds 5000 items / 100 MiB limit')
     return entries
 
 def operate(root, payload, private=None):
@@ -86,8 +82,8 @@ def operate(root, payload, private=None):
         return {'name': path.name, 'items': len(entries), 'size': sum(p.stat().st_size for p in entries if p.is_file()), 'mode': oct(stat.S_IMODE(path.stat().st_mode))[2:], 'modified': int(path.stat().st_mtime)}
     if action == 'download':
         size = path.stat().st_size
-        if not path.is_file() or size > MAX_ARCHIVE:
-            raise Rejected('Download supports files up to 100 MiB; archive folders first')
+        if not path.is_file():
+            raise Rejected('Archive folders before downloading')
         offset = payload.get('offset', 0)
         if type(offset) is not int or offset < 0 or offset > size:
             raise Rejected('Invalid offset')
@@ -121,8 +117,8 @@ def operate(root, payload, private=None):
         if action == 'rename':
             path.rename(target)
         else:
-            if target.is_relative_to(path) or path.stat().st_size > MAX_ARCHIVE:
-                raise Rejected('Invalid copy destination or size')
+            if target.is_relative_to(path):
+                raise Rejected('Invalid copy destination')
             bounded_tree(path)
             if path.is_dir():
                 shutil.copytree(path, target, symlinks=True)
@@ -137,8 +133,6 @@ def operate(root, payload, private=None):
         if target.exists() or (path.is_dir() and target.is_relative_to(path)):
             raise Rejected('Invalid archive destination')
         candidates = bounded_tree(path)
-        if len(candidates) > 5000 or sum(p.lstat().st_size for p in candidates) > MAX_ARCHIVE:
-            raise Rejected('Archive exceeds interactive limit')
         with zipfile.ZipFile(target, 'x', zipfile.ZIP_DEFLATED) as archive:
             for entry in candidates:
                 if entry.is_symlink():
@@ -151,8 +145,8 @@ def operate(root, payload, private=None):
             raise Rejected('Extract into a new directory')
         with zipfile.ZipFile(path) as archive:
             members = archive.infolist()
-            if len(members) > 5000 or sum(m.file_size for m in members) > MAX_ARCHIVE:
-                raise Rejected('Archive exceeds extraction limits')
+            if sum(m.file_size for m in members) > shutil.disk_usage(target.parent).free:
+                raise Rejected('Espaço livre insuficiente para descompactar o ZIP')
             for member in members:
                 inside(target, member.filename)
                 mode = member.external_attr >> 16
@@ -188,8 +182,10 @@ def upload(root, private, payload):
         if target.exists():
             raise Rejected('Destination already exists; rename or move it first')
         size = payload.get('size')
-        if type(size) is not int or not 0 <= size <= MAX_ARCHIVE:
-            raise Rejected('Maximum upload size is 100 MiB')
+        if type(size) is not int or not 0 <= size <= 9007199254740991:
+            raise Rejected('Invalid upload size')
+        if size > shutil.disk_usage(directory).free:
+            raise Rejected('Espaço livre insuficiente para enviar este arquivo')
         if len(list(directory.glob('*.json'))) >= 10:
             raise Rejected('Too many unfinished uploads')
         token = uuid.uuid4().hex
@@ -206,22 +202,40 @@ def upload(root, private, payload):
             raise Rejected('Invalid upload offset or size')
         with open(data_path, 'ab') as out:
             out.write(content)
+        os.utime(metadata_path, None)
         return {'offset': data_path.stat().st_size}
     if action == 'upload_finish':
         target = inside(root, metadata['path'])
         if data_path.stat().st_size != metadata['size'] or target.exists():
             raise Rejected('Incomplete upload or destination exists')
-        # Create within the destination directory to inherit its web-server group.
-        # Publish without replacing any concurrent file or symbolic link.
-        import tempfile
-        descriptor, temp_name = tempfile.mkstemp(prefix='.vpm-upload-', dir=target.parent)
-        try:
-            with os.fdopen(descriptor, 'wb') as out, open(data_path, 'rb') as source:
-                shutil.copyfileobj(source, out)
-            os.chmod(temp_name, 0o640)
-            os.link(temp_name, target)
-        finally:
-            os.unlink(temp_name)
+        # Publish on the same filesystem without copying the whole upload or
+        # requiring twice its space. Assign the destination's group for nginx.
+        os.chmod(data_path, 0o640)
+        if os.name=='posix' and data_path.stat().st_gid!=target.parent.stat().st_gid:
+            # Transfers started by older agents may have the site's private group.
+            publish_cross_device(data_path, target)
+        else:
+            try:
+                os.link(data_path, target)
+            except OSError as exc:
+                if exc.errno != errno.EXDEV:
+                    raise
+                publish_cross_device(data_path, target)
     data_path.unlink()
     metadata_path.unlink()
     return {'message': 'Upload completed' if action == 'upload_finish' else 'Upload cancelled'}
+
+
+def publish_cross_device(data_path, target):
+    # Mounts on another filesystem need a bounded-memory copy and their own space.
+    if data_path.stat().st_size > shutil.disk_usage(target.parent).free:
+        raise Rejected('Espaço livre insuficiente no destino do upload')
+    import tempfile
+    descriptor, temp_name = tempfile.mkstemp(prefix='.vpm-upload-', dir=target.parent)
+    try:
+        with os.fdopen(descriptor, 'wb') as out, open(data_path, 'rb') as source:
+            shutil.copyfileobj(source, out)
+        os.chmod(temp_name, 0o640)
+        os.link(temp_name, target)
+    finally:
+        os.unlink(temp_name)

@@ -36,7 +36,7 @@ O agente depende dos caminhos padrão dos pacotes Ubuntu, não dos caminhos do a
 
 Exclusão de site desativa a configuração e bloqueia a conta Unix, preservando os arquivos para recuperação do operador. A exclusão permanente desses diretórios não é oferecida pelo painel nesta versão.
 
-Arquivos: editor/upload de 1 MiB, operações interativas ZIP até 100 MiB, sem links simbólicos ou caminhos externos. Arquivos grandes devem usar SFTP. Containers não têm portas publicadas nem redes personalizadas nesta versão.
+Arquivos: editor de 1 MiB; upload e download em partes de 1 MiB, sem limite fixo de 100 MB por arquivo. ZIP e extração usam o espaço disponível, sem permitir links simbólicos ou caminhos externos. Operações interativas de compactação e extração continuam sujeitas ao tempo de execução do agente (170 segundos). Containers não têm portas publicadas nem redes personalizadas nesta versão.
 
 ## VPS remota
 

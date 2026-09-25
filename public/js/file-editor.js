@@ -28,7 +28,7 @@ async function loadEditor(name){
 }
 
 // The caller captures the website and path before loading, so saves cannot target another file.
-export async function openFileEditor({modal,name,path,content,save,onClose}){
+export async function openFileEditor({modal,name,path,siteName,content,save,onClose}){
  const {ace,mode}=await loadEditor(name);
  if(modal.open)throw new Error('Feche a janela atual antes de abrir outro arquivo.');
  const previousFocus=document.activeElement;
@@ -36,7 +36,7 @@ export async function openFileEditor({modal,name,path,content,save,onClose}){
  modal.classList.add('fm-editor-dialog');
  modal.innerHTML=`<section class="code-workspace" aria-label="Editor de código">
   <header class="code-header">${button('close','Fechar editor','close')}<h2 id="modal-title">${esc(name)}</h2><span class="code-dirty" aria-label="Alterações não salvas" hidden>●</span><span class="code-status" role="status" aria-live="polite"></span><div class="code-font">${button('larger','Aumentar fonte','plus')}<output aria-label="Tamanho da fonte">14px</output><button type="button" data-code="smaller" aria-label="Diminuir fonte" title="Diminuir fonte">−</button></div>${button('save','Salvar arquivo (Ctrl+S)','save')}</header>
-  <div class="code-subheader"><nav aria-label="Caminho do arquivo">${icon('dashboard')}${['public_html',...path.split('/')].map(part=>`<span class="code-separator">›</span><span>${esc(part)}</span>`).join('')}</nav><div class="code-tools">${button('copy','Copiar seleção','copy')}${button('cut','Recortar seleção','cut')}${button('paste','Colar','clipboard')}<button type="button" data-code="menu" aria-label="Mais opções" title="Mais opções" aria-expanded="false" aria-controls="code-menu">${icon('more')}</button></div></div>
+  <div class="code-subheader"><nav aria-label="Caminho do arquivo">${icon('dashboard')}${[...(siteName?[siteName]:[]),'public_html',...path.split('/')].map(part=>`<span class="code-separator">›</span><span>${esc(part)}</span>`).join('')}</nav><div class="code-tools">${button('copy','Copiar seleção','copy')}${button('cut','Recortar seleção','cut')}${button('paste','Colar','clipboard')}<button type="button" data-code="menu" aria-label="Mais opções" title="Mais opções" aria-expanded="false" aria-controls="code-menu">${icon('more')}</button></div></div>
   <div id="code-menu" class="code-menu" hidden>${button('find','Localizar (Ctrl+F)','search')}${button('replace','Substituir (Ctrl+H)','edit')}${button('undo','Desfazer (Ctrl+Z)','back')}${button('redo','Refazer (Ctrl+Shift+Z)','arrow')}${button('wrap','Quebra de linha','list')}</div>
   <div class="code-error" role="alert" hidden></div><div id="file-code-surface" class="code-surface"></div>
  </section>`;

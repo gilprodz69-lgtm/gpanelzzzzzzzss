@@ -1,5 +1,5 @@
 {
-  "version": "0.2.5-preview",
+  "version": "0.2.6-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,17 +19,17 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "487060bfa5d3e22304b1135fd466db12fb72e1949d2b2122cd8c721a55cd6f20"
+      "sha256": "95ca84849a29056997c017afd1bc4106598e6fad58933bb1db5578cbb0ae302e"
     },
     {
       "path": "agent/files.py",
-      "bytes": 11282,
-      "sha256": "be3ec6111a37f1137812cbe87d52f15c8ed17652547c1e07a44eec03609c2072"
+      "bytes": 11710,
+      "sha256": "bfd4619b605867a3c211d9b24a640346ccd90b62574656e86e0ea054f1facc48"
     },
     {
       "path": "agent/operations.py",
-      "bytes": 26514,
-      "sha256": "54470e2aa3da26264063ee58292ffa104ba22e0418e858dce93bf4b3eea618ad"
+      "bytes": 27067,
+      "sha256": "0c19a690f90b3d0d306aeeba6e90505b5ee45ac7dc6798db03e2b4434cd1ecbe"
     },
     {
       "path": "agent/runtime.py",
@@ -248,8 +248,8 @@
     },
     {
       "path": "docs/AGENT.md",
-      "bytes": 3342,
-      "sha256": "a6fdbda97eea40e6a61d616ba14ee211b94e342a214a81f70f0dc02165d53834"
+      "bytes": 3512,
+      "sha256": "2357d72807d5540ce3ac0a9d513b0dc2362af7af22ac77e540e66cce83da63e0"
     },
     {
       "path": "docs/API.md",
@@ -283,8 +283,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 5862,
-      "sha256": "4fef54660b905e99ceae74a3b467119895ec3f3a8f4794f0b4f9ef9a5885458a"
+      "bytes": 5815,
+      "sha256": "6bbc69ca2b98f2d68db362ef1591e915b94b522407d7f06193581c954b80ea30"
     },
     {
       "path": "public/css/app.css",
@@ -303,8 +303,8 @@
     },
     {
       "path": "public/css/file-manager.css",
-      "bytes": 9805,
-      "sha256": "98384dbb39e64785a9d6d796cc6409ad7a4f5e3307545af0c3062c5c7dd97c3a"
+      "bytes": 10856,
+      "sha256": "b9c0d3dc3ae9b7639d34c3285b83d8b47526acd2194b17f511fd8cf493d8becf"
     },
     {
       "path": "public/css/login.css",
@@ -333,8 +333,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 43220,
-      "sha256": "d51a736dfc1d507927de6e3a3b20308153c7c3c57a37c6cc1ee32eb281888162"
+      "bytes": 44352,
+      "sha256": "461d1d3a837d443c800d91f8c247881d0fc2c7da939313cc9acb6a4a72478727"
     },
     {
       "path": "public/js/cron-schedule.js",
@@ -348,13 +348,13 @@
     },
     {
       "path": "public/js/file-editor.js",
-      "bytes": 8826,
-      "sha256": "ec185488717b1629c40ddea84aee379ad8ababf3b74aa27b8a48c3ec1a3464dc"
+      "bytes": 8863,
+      "sha256": "a286b031c75e44a3407469744cf5f16257a7cdec129f503ea94aa8f6236cce48"
     },
     {
       "path": "public/js/file-manager.js",
-      "bytes": 20101,
-      "sha256": "c1d75a20da6c9a13bf20a3691a796d1f00a15bdd1e94b5f760cad3b06f11a0c4"
+      "bytes": 23580,
+      "sha256": "330c23d81bf9a17f8a7907fee88a55a5d97fd66665acad50e92541d2dcdd379d"
     },
     {
       "path": "public/js/forms.js",
