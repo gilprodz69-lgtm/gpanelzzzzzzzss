@@ -197,6 +197,26 @@ check('client database automatically uses authorized hosting and own account',fu
     $row=$service->find('databases',$r['id']);eq((int)$row['server_id'],$server);eq((int)$row['owner_id'],$clientId);
 });
 
+check('subdomain has own folder, inherits authorized site and rejects foreign parent or duplicate',function()use($db,$master,$client,$server,$masterId){
+    $service=new ResourceService($db,$master);
+    $site=$service->create('websites',['server_id'=>$server,'domain'=>'domains-test.example.com'])['id'];
+    $db->query("UPDATE websites SET status='active' WHERE id=?",[$site]);
+    $data=['website_id'=>$site,'type'=>'subdomain','parent_domain'=>'domains-test.example.com','prefix'=>'Blog','server_id'=>99999,'owner_id'=>99999];
+    denied(fn()=>(new ResourceService($db,$client))->create('domains',$data),404);
+    foreach(['../escape','bad.name','-bad',str_repeat('a',64)] as $prefix)denied(fn()=>$service->create('domains',array_merge($data,['prefix'=>$prefix])),422);
+    denied(fn()=>$service->create('domains',array_merge($data,['parent_domain'=>'foreign.example.com'])),422);
+    $result=$service->create('domains',$data);$row=$service->present($service->find('domains',$result['id']));
+    eq($row['name'],'blog.domains-test.example.com');eq($row['config']['document_root'],$row['name']);
+    eq((int)$row['owner_id'],$masterId);eq((int)$row['server_id'],$server);
+    denied(fn()=>$service->create('domains',$data),409);
+    denied(fn()=>$service->create('domains',['website_id'=>$site,'domain'=>'domains-test.example.com']),409);
+    denied(fn()=>$service->create('domains',['website_id'=>$site,'domain'=>'redirect.example.com','type'=>'redirect','target'=>'redirect.example.com']),422);
+    $alias=$service->create('domains',['website_id'=>$site,'domain'=>'alias-base.example.com'])['id'];
+    $db->query("UPDATE domains SET status='active' WHERE id=?",[$alias]);
+    $service->create('domains',array_merge($data,['prefix'=>'shop','parent_domain'=>'alias-base.example.com']));
+    denied(fn()=>$service->delete('domains',$alias),409);
+});
+
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

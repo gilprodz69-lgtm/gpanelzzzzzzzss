@@ -5,7 +5,7 @@ final class Catalog
 {
     public const RESOURCES = [
         'websites' => ['label'=>'Sites','operation'=>'create_site','fields'=>['domain','php_version']],
-        'domains' => ['label'=>'Domínios','operation'=>'create_domain','fields'=>['domain','website_id','type','target']],
+        'domains' => ['label'=>'Domínios','operation'=>'create_domain','fields'=>['domain','website_id','type','target','prefix','parent_domain']],
         'databases' => ['label'=>'Bancos de dados','operation'=>'create_database','fields'=>['name','username','password']],
         'ssl_certificates' => ['label'=>'Certificados SSL','operation'=>'create_ssl','fields'=>['website_id','email']],
         'ftp_accounts' => ['label'=>'Contas SFTP','operation'=>'create_sftp','fields'=>['website_id','name','password']],

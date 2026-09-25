@@ -1,5 +1,6 @@
 """Original Linux implementation. All executable names and templates are controlled here."""
 import json
+import base64
 import os
 import re
 import shutil
@@ -189,10 +190,23 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
 
     def create_domain(self, p):
         s = self.find('site', p, 'website_id'); host = domain(p['alias'])
-        kind = choice(p['type'], ['alias', 'redirect', 'parked'])
+        kind = choice(p['type'], ['alias', 'subdomain', 'redirect', 'parked'])
+        if host == os.getenv('VPM_PANEL_HOST'):
+            raise Rejected('This hostname is reserved for the control panel')
         if self.catalog.execute("SELECT 1 FROM resources WHERE kind IN ('site','domain') AND json_extract(data,'$.domain')=?", (host,)).fetchone():
             raise Rejected('Domain already in use')
         path = Path(f"/etc/nginx/conf.d/vpm-domain-{integer(p['tenant_id'])}-{integer(p['resource_id'])}.conf")
+        if path.exists():
+            raise Rejected('Existing domain configuration requires reconciliation')
+        if kind == 'subdomain':
+            parent = domain(p.get('parent_domain'))
+            prefix = host.removesuffix('.' + parent)
+            if host != prefix + '.' + parent or not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', prefix):
+                raise Rejected('Invalid subdomain')
+            # Always derive the directory from the validated hostname, never from a caller path.
+            self.files({**p, 'action': 'mkdir', 'path': host})
+            self.files({**p, 'action': 'write', 'path': host + '/index.html',
+                        'content': base64.b64encode(b'<!doctype html><meta charset="utf-8"><h1>Subdominio ativo</h1>').decode()})
         if kind == 'redirect':
             content = f"server {{ listen 80; server_name {host}; return 301 https://{domain(p['target'])}$request_uri; }}\n"
         elif kind == 'parked':
@@ -203,6 +217,8 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
                 content = content[content.index('server {', content.index('server {') + 1):]
                 content = re.sub(r'    ssl_(?:certificate|certificate_key|protocols) [^;]+;\n', '', content).replace('listen 443 ssl;', 'listen 80;')
             content = content.replace('server_name ' + s['domain'] + ';', 'server_name ' + host + ';')
+            if kind == 'subdomain':
+                content = content.replace('root ' + s['public'] + ';', 'root ' + s['public'] + '/' + host + ';')
         cert, key = tls.local_certificate(host)
         content = tls.secure_config(content, host, cert, key)
         atomic_write(path, content)
@@ -210,7 +226,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             run(['/usr/sbin/nginx', '-t']); reload_nginx()
         except Exception:
             path.unlink(missing_ok=True); raise
-        self.save('domain', p, {'domain': host, 'path': str(path)})
+        self.save('domain', p, {'domain': host, 'path': str(path), 'website_id': integer(p['website_id']), 'type': kind})
         result = {'domain': host, 'https': True, 'trusted': False}
         try:
             result.update(tls.upgrade_certificate(path, host, os.getenv('VPM_ACME_EMAIL', '')))

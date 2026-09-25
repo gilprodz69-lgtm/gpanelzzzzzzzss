@@ -87,9 +87,20 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         if index==1:
             ops.create_domain({**files,'resource_id':50,'alias':'alias.example.invalid','type':'alias'})
             assert fetch('alias.example.invalid','/version.php').endswith(version.encode())
+            sub={**files,'resource_id':51,'alias':'blog.'+p['domain'],'type':'subdomain','parent_domain':p['domain']}
+            ops.create_domain(sub)
+            assert b'Subdominio ativo' in fetch(sub['alias'])
+            ops.files({**files,'action':'write','path':sub['alias']+'/version.php','content':base64.b64encode(b'<?php echo "subdomain:".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;').decode()})
+            assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:'+version.encode())
+            assert not fetch(p['domain'],'/version.php').endswith(b'subdomain:'+version.encode())
             ops.change_php({**p,'php_version':'8.4'})
             assert fetch(p['domain'],'/version.php').endswith(b'8.4')
             assert fetch('alias.example.invalid','/version.php').endswith(b'8.4')
+            assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:8.4')
+            ops.delete_domain(sub)
+            assert (Path(site['public'])/sub['alias']/'version.php').is_file()
+            assert not Path('/etc/nginx/conf.d/vpm-domain-999-51.conf').exists()
+            print('PASS subdomain separate content, HTTPS, PHP inheritance and preserved files on removal',flush=True)
             ops.delete_domain({**files,'resource_id':50})
         print('PASS PHP',version,'HTTPS, files, upload, trash and backup restoration',flush=True)
 

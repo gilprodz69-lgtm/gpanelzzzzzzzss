@@ -22,6 +22,10 @@ final class ResourceService
     public function present(array $r): array { $r['config']=json_decode($r['config_json'],true); unset($r['config_json']); return $r; }
     public function create(string $kind,array $data): array {
         $this->kind($kind); $this->policy->require("$kind.create");
+        if($kind==='domains') {
+            $site=$this->find('websites',Input::integer($data['website_id']??null,'Site'));
+            $data['server_id']=$site['server_id']; $data['owner_id']=$site['owner_id'];
+        }
         if($kind==='databases' && $this->policy->user['role']==='CLIENT') {
             $available=(new ServerService($this->db,$this->policy))->list(true);
             if(!$available) throw new HttpError(422,'Sua conta ainda não tem hospedagem autorizada. Contate o responsável.');
@@ -55,7 +59,28 @@ final class ResourceService
         if(in_array($kind,['domains','ssl_certificates','ftp_accounts','backups','cron_jobs'],true) && !isset($c['website_id'])) throw new HttpError(422,'Selecione um site ativo.');
         switch($kind) {
             case 'websites': $name=filter_var($d['domain']??'',FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)?$d['domain']:Input::domain($d['domain']??''); if(filter_var($name,FILTER_VALIDATE_IP) && (!$this->policy->isAdmin() || $name!==$this->policy->server($server)['address'])) throw new HttpError(422,'O site por IP deve usar o endereço deste servidor e ser criado pelo administrador.'); $c=['domain'=>$name,'php_version'=>Input::choice($d['php_version']??'8.3',\App\Models\PhpVersions::ALL,'PHP'),'email'=>$owner['email']]; break;
-            case 'domains': $name=Input::domain($d['domain']??''); $c['alias']=$name; $c['type']=Input::choice($d['type']??'alias',['alias','redirect','parked'],'Tipo'); if($c['type']==='redirect') $c['target']=Input::domain($d['target']??''); break;
+            case 'domains':
+                $c['type']=Input::choice($d['type']??'alias',['alias','subdomain','redirect','parked'],'Tipo');
+                if($c['type']==='subdomain') {
+                    $parent=Input::domain($d['parent_domain']??'');
+                    $prefix=strtolower(trim((string)($d['prefix']??'')));
+                    if(!preg_match('/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/D',$prefix)) throw new HttpError(422,'Informe um nome de subdomínio válido, como blog ou loja.');
+                    $allowed=[$site['name']];
+                    foreach($this->db->all("SELECT name,config_json FROM domains WHERE tenant_id=? AND owner_id=? AND server_id=? AND status='active' AND deleted_at IS NULL",[$owner['tenant_id'],$owner['id'],$server]) as $row) {
+                        if((int)(json_decode($row['config_json'],true)['website_id']??0)===$c['website_id']) $allowed[]=$row['name'];
+                    }
+                    if(!in_array($parent,$allowed,true)) throw new HttpError(422,'Selecione um domínio ativo vinculado a este site.');
+                    $name=Input::domain($prefix.'.'.$parent); $c['parent_domain']=$parent;
+                    $c['document_root']=$name;
+                } else $name=Input::domain($d['domain']??'');
+                if(strlen($name)>190) throw new HttpError(422,'Domínio muito longo (máximo de 190 caracteres).');
+                foreach(['websites','domains'] as $table) if($this->db->one("SELECT id FROM `$table` WHERE server_id=? AND name=? AND deleted_at IS NULL",[$server,$name])) throw new HttpError(409,'Este domínio já está cadastrado no servidor.');
+                $c['alias']=$name;
+                if($c['type']==='redirect') {
+                    $c['target']=Input::domain($d['target']??'');
+                    if($c['target']===$name) throw new HttpError(422,'O destino deve ser diferente do domínio de origem.');
+                }
+                break;
             case 'databases':
                 $prefix='u'.$owner['id'].'_';
                 $name=Input::identifier($prefix.Input::identifier($d['name']??''));
@@ -86,6 +111,9 @@ final class ResourceService
         return $this->db->transaction(function() use($kind,$id) {
             $this->db->lockTenant((int)$this->policy->user['tenant_id']); $r=$this->find($kind,$id);
             if(!in_array($r['status'],['active','failed'],true)) throw new HttpError(409,'Aguarde a operação atual terminar.');
+            if($kind==='domains') foreach($this->db->all('SELECT config_json FROM domains WHERE server_id=? AND deleted_at IS NULL',[$r['server_id']]) as $row) {
+                if((json_decode($row['config_json'],true)['parent_domain']??null)===$r['name']) throw new HttpError(409,'Remova primeiro os subdomínios vinculados a este domínio.');
+            }
             if($kind==='websites' && $this->db->one('SELECT id FROM backup_schedules WHERE tenant_id=? AND website_id=?',[$r['tenant_id'],$id])) throw new HttpError(409,'Remova o agendamento de backup antes de excluir o site.');
             if($kind==='websites') foreach(['domains','ssl_certificates','ftp_accounts','backups','cron_jobs'] as $child) {
                 foreach($this->db->all("SELECT config_json FROM `$child` WHERE tenant_id=? AND deleted_at IS NULL",[$r['tenant_id']]) as $row) if((int)(json_decode($row['config_json'],true)['website_id']??0)===$id) throw new HttpError(409,'Remova os recursos vinculados ao site antes de excluí-lo.');

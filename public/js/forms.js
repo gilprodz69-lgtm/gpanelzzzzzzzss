@@ -1,9 +1,11 @@
 import{api,esc}from'./api.js';
 import{scheduleFields,bindSchedule}from'./cron-schedule.js';
+import{domainForm}from'./domains.js';
 const field=(name,label,type='text',extra='')=>`<label>${label}<input class="input" name="${name}" type="${type}" ${extra} required></label>`;
 const select=(name,label,items,selected='')=>`<label>${label}<select class="input" name="${name}" required>${items.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(selected)?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`;
 const limitsLabels={websites:'Sites',domains:'Domínios',databases:'Bancos',ssl_certificates:'Certificados SSL',ftp_accounts:'Contas SFTP',backups:'Backups',cron_jobs:'Cron jobs',docker_containers:'Containers',users:'Clientes',storage_mb:'Armazenamento (MB)',traffic_mb:'Tráfego (MB)',cpu:'CPU',ram_mb:'RAM (MB)'};
-export async function creationForm(kind,ctx){
+export async function creationForm(kind,ctx,preset){
+ if(kind==='domains')return domainForm(ctx,preset);
  let fields='',note='',title='',cronSites=[];
  if(kind==='servers'){
   title='Adicionar Servidor';
@@ -35,7 +37,6 @@ export async function creationForm(kind,ctx){
   }
   const schemas={
    websites:()=>field('domain','Domínio ou IP da VPS','text','placeholder="exemplo.com.br"')+select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),'8.3'),
-   domains:()=>field('domain','Domínio','text','placeholder="www.exemplo.com.br"')+select('type','Tipo',[['alias','Alias'],['parked','Estacionado'],['redirect','Redirecionamento']])+'<label>Destino (somente redirecionamento)<input class="input" name="target" placeholder="destino.com.br"></label>',
    databases:()=>field('name','Nome do banco','text','pattern="[a-z][a-z0-9_]{0,31}" placeholder="meu_banco"')+field('username','Usuário do banco','text','pattern="[a-z][a-z0-9_]{0,31}" placeholder="meu_usuario"')+field('password','Senha do banco','password','minlength="12" maxlength="72" autocomplete="new-password"')+'<div class="full helper" data-database-preview aria-live="polite"></div>',
    ssl_certificates:()=>field('email','E-mail de contato ACME','email',`value="${esc(ctx.me.user.email)}"`),
    ftp_accounts:()=>field('name','Nome do usuário SFTP','text','pattern="[a-z][a-z0-9_]{0,20}"')+field('password','Senha SFTP','password','minlength="12" maxlength="72" autocomplete="new-password"'),

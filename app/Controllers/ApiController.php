@@ -55,6 +55,14 @@ final class ApiController
         if($path==='/notifications' && $method==='GET') return ['data'=>$this->db->all('SELECT * FROM notifications WHERE tenant_id=? AND user_id=? ORDER BY id DESC LIMIT 100',[$u['tenant_id'],$u['id']])];
         if(preg_match('#^/notifications/(\d+)/read$#D',$path,$m) && $method==='POST') { $this->db->query('UPDATE notifications SET read_at=? WHERE id=? AND tenant_id=? AND user_id=?',[time(),$m[1],$u['tenant_id'],$u['id']]); return ['message'=>'Notificação lida.']; }
         if($path==='/files' && $method==='POST') return $this->files($data);
+        if(preg_match('#^/domains/(\d+)/access$#D',$path,$m) && $method==='GET') {
+            $this->policy->require('domains.view');
+            $r=$resources->present($resources->find('domains',(int)$m[1]));
+            $server=$this->policy->server((int)$r['server_id']);
+            $address=$server['address'];
+            $r['dns']=['name'=>$r['name'],'type'=>filter_var($address,FILTER_VALIDATE_IP,FILTER_FLAG_IPV6)?'AAAA':(filter_var($address,FILTER_VALIDATE_IP)?'A':'CNAME'),'value'=>$address];
+            return $r;
+        }
         if(preg_match('#^/databases/(\d+)/(access|password)$#D',$path,$m)) {
             $this->policy->require('databases.'.($m[2]==='access'?'view':'edit'));
             $r=$resources->find('databases',(int)$m[1]);

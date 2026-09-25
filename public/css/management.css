@@ -4,4 +4,8 @@
 .details-grid dt { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
 .details-grid dd { margin: 0; overflow-wrap: anywhere; }
 .form-grid [hidden] { display: none !important; }
+.detail-grid { display:grid;grid-template-columns:130px minmax(0,1fr);gap:10px 16px;font-size:13px;line-height:1.6; }
+.detail-grid dt { color:var(--muted); }
+.detail-grid dd { margin:0;overflow-wrap:anywhere; }
+.page-heading .row-actions { flex-wrap:wrap; }
 @media(max-width:520px) { .details-grid { grid-template-columns: 1fr; } }

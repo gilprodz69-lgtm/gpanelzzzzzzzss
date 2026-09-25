@@ -1,5 +1,5 @@
 {
-  "version": "0.2.6-preview",
+  "version": "0.2.7-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "95ca84849a29056997c017afd1bc4106598e6fad58933bb1db5578cbb0ae302e"
+      "sha256": "d68996e2ec678232aef633ed544b858579e15934b8ee96f4452d638d63a5f9c6"
     },
     {
       "path": "agent/files.py",
@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 27067,
-      "sha256": "0c19a690f90b3d0d306aeeba6e90505b5ee45ac7dc6798db03e2b4434cd1ecbe"
+      "bytes": 28205,
+      "sha256": "4910b3adbdd3ab1db3eb9c3fad380aa8d5efc7a0b34cab4d430e75af0451ad5d"
     },
     {
       "path": "agent/runtime.py",
@@ -53,8 +53,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 20136,
-      "sha256": "4d4396590dd13bc670dfe507135f0975fe33b107325a0403ec8e7a46cea573a0"
+      "bytes": 20674,
+      "sha256": "390bf2ab1b25ad1df8a066d63dd9a98246df2c27bcbeb2d6fdfe4d1ad2b6816f"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -73,8 +73,8 @@
     },
     {
       "path": "app/Models/Catalog.php",
-      "bytes": 2567,
-      "sha256": "47618edba84bcc140c7cdb4b3d720c6e0bc01f453aadb70b2c0242ebb352a874"
+      "bytes": 2592,
+      "sha256": "3ff00053785f25044d237182d2b910f883464b2a1e7f7603ae974c75979f4db1"
     },
     {
       "path": "app/Models/PhpVersions.php",
@@ -138,8 +138,8 @@
     },
     {
       "path": "app/Services/ResourceService.php",
-      "bytes": 10162,
-      "sha256": "c57457b823d41e4738bb4433fef4f5dc895d66cef67adb4fe484c23727921c4d"
+      "bytes": 12442,
+      "sha256": "52d96143d52cbd85731a848f97ec31315f34d6410fad9518c998147ba04aed3a"
     },
     {
       "path": "app/Services/ServerService.php",
@@ -313,8 +313,8 @@
     },
     {
       "path": "public/css/management.css",
-      "bytes": 540,
-      "sha256": "76930ca702eb16e321e7dc4efcef38e91ebcf289f63d196074556db37b3a6753"
+      "bytes": 798,
+      "sha256": "4f538dd28bcb3320a9daf0f0dbfa9de9c6d469a56a91dc67b9001347c2e01aee"
     },
     {
       "path": "public/images/logo.svg",
@@ -333,8 +333,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 44352,
-      "sha256": "461d1d3a837d443c800d91f8c247881d0fc2c7da939313cc9acb6a4a72478727"
+      "bytes": 45199,
+      "sha256": "d1ad931ac1861b56558c0f3bd3d06b3b72b30243783044bc1fb9e493f6fbe183"
     },
     {
       "path": "public/js/cron-schedule.js",
@@ -345,6 +345,11 @@
       "path": "public/js/dashboard.js",
       "bytes": 7674,
       "sha256": "d327e25d59380ba8ad207a2cb3680479351e2c44c972e8f5eb422410aae33430"
+    },
+    {
+      "path": "public/js/domains.js",
+      "bytes": 6017,
+      "sha256": "df1fe41fdcc794ae7814e1c71424f7cafc21f1b62bdacd0f4fb9d980288e500c"
     },
     {
       "path": "public/js/file-editor.js",
@@ -358,8 +363,8 @@
     },
     {
       "path": "public/js/forms.js",
-      "bytes": 8678,
-      "sha256": "e4f1762020b2ec0144f02560ed6eee7b31fbdfff3e8e1ba2a7dee91a7a00e29e"
+      "bytes": 8475,
+      "sha256": "2562ba73feea5d9583ad5bf4dcc054c86496547f36419586fcb4ce13ed785e02"
     },
     {
       "path": "public/js/icons.js",
