@@ -47,7 +47,7 @@ final class ResourceService
         }
         if(in_array($kind,['domains','ssl_certificates','ftp_accounts','backups','cron_jobs'],true) && !isset($c['website_id'])) throw new HttpError(422,'Selecione um site ativo.');
         switch($kind) {
-            case 'websites': $name=Input::domain($d['domain']??''); $c=['domain'=>$name,'php_version'=>Input::choice($d['php_version']??'8.3',['8.3','8.4'],'PHP')]; break;
+            case 'websites': $name=filter_var($d['domain']??'',FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)?$d['domain']:Input::domain($d['domain']??''); if(filter_var($name,FILTER_VALIDATE_IP) && (!$this->policy->isAdmin() || $name!==$this->policy->server($server)['address'])) throw new HttpError(422,'O site por IP deve usar o endereço deste servidor e ser criado pelo administrador.'); $c=['domain'=>$name,'php_version'=>Input::choice($d['php_version']??'8.3',\App\Models\PhpVersions::ALL,'PHP'),'email'=>$owner['email']]; break;
             case 'domains': $name=Input::domain($d['domain']??''); $c['alias']=$name; $c['type']=Input::choice($d['type']??'alias',['alias','redirect','parked'],'Tipo'); if($c['type']==='redirect') $c['target']=Input::domain($d['target']??''); break;
             case 'databases': $label=Input::identifier($d['name']??''); $name='u'.$owner['id'].'_'.$label; $c=['name'=>$name]; $secret['password']=Input::password($d['password']??''); break;
             case 'ssl_certificates': $name=$c['domain']; $c['email']=Input::email($d['email']??$owner['email']); break;

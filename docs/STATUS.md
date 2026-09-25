@@ -1,4 +1,4 @@
-# Status de implementação — 0.1.0-preview
+# Status de implementação — 0.2.0-preview
 
 Esta é uma versão de desenvolvimento instalável, não a conclusão integral da plataforma comercial solicitada. A especificação original continua sendo a meta. Não há módulos simulados reportando execução real.
 
@@ -11,11 +11,11 @@ Esta é uma versão de desenvolvimento instalável, não a conclusão integral d
 | Limites | Quantidade de sites, domínios, bancos, backups, SFTP, containers, cron e clientes, incluindo pendências | Disco/tráfego/cgroups/CPU/RAM por tenant aplicados no host |
 | VPS | Cadastro, segredo criptografado, concessões de acesso e múltiplos servidores | Provisionamento remoto automático e rotação de segredo pela interface |
 | Métricas | CPU, RAM, disco, rede, load, uptime, histórico, alertas e polling | Agregação longa, quotas físicas e consumo por cliente |
-| Sites | Handler Nginx, pool PHP isolado, usuário Unix, diretório, fila e remoção conservadora | Homologação Linux completa, edição avançada de virtual host e parâmetros PHP |
+| Sites | PHP 7.4 a 8.4 selecionável por site, handler Nginx, pool PHP isolado, usuário Unix, diretório, fila e remoção conservadora | Homologação Linux completa, edição avançada de virtual host e parâmetros PHP |
 | Domínios | Alias, estacionado e redirecionamento | Edição e integração completa de certificados multi-domínio |
-| SSL | Solicitação Certbot e renovação via timer Certbot | Revogação/remoção coordenada e alertas por validade |
-| Bancos | Criação e remoção com usuário dedicado e segredo cifrado | Importação/exportação, usuários adicionais, senha e backup de banco |
-| Arquivos | API para listar/ler/gravar/mover/copiar/ZIP/UNZIP/permissões; UI para listar/editar/upload/criar/excluir | Download na UI, ações avançadas na UI, editor com realce de sintaxe |
+| SSL | HTTPS automático nos novos sites; Certbot 5.4+ para domínio/IPv4 e renovação a cada 6 horas, certificado local se ACME falhar | Revogação/remoção coordenada e alertas por validade |
+| Bancos | Criação/remoção, usuário dedicado, troca de senha, conexão e phpMyAdmin com importação/exportação/SQL | Usuários adicionais e backup automatizado de banco |
+| Arquivos | UI com lista/grade, busca, seleção, contexto, copiar/mover, ZIP/UNZIP, permissões, download, uploads em partes até 100 MB e lixeira com restauração | Editor com realce de sintaxe; operações recursivas limitadas a 5000 itens / 100 MB |
 | SFTP | Criação/remover conta em chroot por site | Gestão avançada de credenciais; FTP opcional |
 | Backups | Arquivos do site, SHA256, restauração, agendamento diário/semanal/mensal e retenção por API | Agenda na UI, bancos/backup completo, S3/Backblaze/Google Cloud |
 | Firewall | UFW com proteção de portas essenciais e operações via fila | CIDR, IPv6 completo na UI e rollback temporizado de regras |
@@ -25,7 +25,7 @@ Esta é uma versão de desenvolvimento instalável, não a conclusão integral d
 | Auditoria | Ações do painel/worker e notificações próprias | Exportação, retenção configurável e armazenamento imutável |
 | SaaS/billing | Estrutura de subscriptions/invoices/payments | Fluxos comerciais, cupons, pagamentos e white-label |
 | Instalação | Instalador autocontido, dependências, MariaDB, PHP, Nginx, agente, worker, métricas e HTTPS | Homologação completa em Ubuntu recém-formatado |
-| Atualização | Script com assinatura, backup, manutenção e troca de release | Canal oficial assinado e autoatualização pelo painel |
+| Atualização | Mesmo comando detecta instalação e oferece atualização; backup, manutenção e nova pasta de release sem arquivos obsoletos | Rollback automático de migrations e atualização pelo navegador |
 
 ## Validação executada durante o desenvolvimento
 

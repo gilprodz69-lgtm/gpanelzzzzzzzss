@@ -14,7 +14,7 @@ final class ServerService
         foreach($all as $s) {
             try { $this->policy->server((int)$s['id']); } catch(HttpError) { continue; }
             if($picker) $out[]=['id'=>$s['id'],'name'=>$s['name']];
-            else { $s['metrics']=$this->db->one('SELECT cpu,ram,disk,uptime,load_avg,network_rx,network_tx,created_at FROM server_metrics WHERE tenant_id=? AND server_id=? ORDER BY id DESC LIMIT 1',[$s['tenant_id'],$s['id']]); unset($s['agent_url']); if($s['last_seen'] && (int)$s['last_seen']<time()-120) $s['status']='offline'; $out[]=$s; }
+            else { $s['metrics']=$this->db->one('SELECT * FROM server_metrics WHERE tenant_id=? AND server_id=? ORDER BY id DESC LIMIT 1',[$s['tenant_id'],$s['id']]); unset($s['agent_url']); if($s['last_seen'] && (int)$s['last_seen']<time()-45) $s['status']='offline'; $out[]=$s; }
         }
         return $out;
     }
@@ -39,7 +39,7 @@ final class ServerService
     }
     public function operation(int $id,array $d): array {
         $this->policy->require('services.manage'); if(!$this->policy->isAdmin()) throw new HttpError(403,'Operação administrativa.'); $this->policy->server($id);
-        $service=Input::choice($d['service']??'',['nginx','php8.3-fpm','php8.4-fpm','mariadb','redis-server','docker','cron'],'Serviço');
+        $service=Input::choice($d['service']??'',['nginx','php7.4-fpm','php8.0-fpm','php8.1-fpm','php8.2-fpm','php8.3-fpm','php8.4-fpm','mariadb','redis-server','docker','cron'],'Serviço');
         $action=Input::choice($d['action']??'',['start','stop','restart'],'Ação');
         $job=(new Jobs($this->db))->enqueue($this->policy->user,$id,'service_action',['service'=>$service,'action'=>$action]);
         Audit::write($this->db,$this->policy->user,'services.'.$action,$service,'queued'); return ['job_id'=>$job,'message'=>'Operação adicionada à fila.'];

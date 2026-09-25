@@ -15,7 +15,7 @@ UMask=0077
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/etc /srv/vpsmanager /var/lib/vpsmanager-agent /var/log /var/cache /var/mail /run
+ReadWritePaths=/etc /srv/vpsmanager /var/lib/vpsmanager-agent /var/lib/vpsmanager-acme /var/lib/letsencrypt /var/log /var/cache /var/mail /run
 TimeoutStopSec=180
 
 [Install]

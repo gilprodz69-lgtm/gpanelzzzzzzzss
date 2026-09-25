@@ -31,7 +31,7 @@ export async function creationForm(kind,ctx){
    fields+=select('website_id','Site',sites.map(s=>[s.id,s.name]));
   }
   const schemas={
-   websites:()=>field('domain','Domínio principal','text','placeholder="exemplo.com.br"')+select('php_version','Versão PHP',[['8.3','PHP 8.3'],['8.4','PHP 8.4']]),
+   websites:()=>field('domain','Domínio ou IP da VPS','text','placeholder="exemplo.com.br"')+select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),'8.3'),
    domains:()=>field('domain','Domínio','text','placeholder="www.exemplo.com.br"')+select('type','Tipo',[['alias','Alias'],['parked','Estacionado'],['redirect','Redirecionamento']])+'<label>Destino (somente redirecionamento)<input class="input" name="target" placeholder="destino.com.br"></label>',
    databases:()=>field('name','Nome do banco','text','pattern="[a-z][a-z0-9_]{0,31}" placeholder="meu_banco"')+field('password','Senha do banco','password','minlength="12" maxlength="72" autocomplete="new-password"'),
    ssl_certificates:()=>field('email','E-mail de contato ACME','email',`value="${esc(ctx.me.user.email)}"`),

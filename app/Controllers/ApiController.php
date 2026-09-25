@@ -33,7 +33,12 @@ final class ApiController
             if($m[2]==='grants' && $method==='POST') return $servers->grant($id,$data);
             if($m[2]==='services' && $method==='POST') return $servers->operation($id,$data);
             if($m[2]==='services' && $method==='GET') { $this->policy->require('services.manage'); if(!$this->policy->isAdmin()) throw new HttpError(403,'Operação administrativa.'); $serversRow=$this->policy->server($id); return (new AgentClient($this->db))->call($serversRow,'services',[],bin2hex(random_bytes(16))); }
-            if($m[2]==='metrics' && $method==='GET') { $this->policy->require('metrics.view'); $this->policy->server($id); $hours=Input::integer($_GET['hours']??1,'Período',1,720); return ['data'=>$this->db->all('SELECT * FROM server_metrics WHERE tenant_id=? AND server_id=? AND created_at>=? ORDER BY created_at LIMIT 3000',[$u['tenant_id'],$id,time()-$hours*3600])]; }
+            if($m[2]==='metrics' && $method==='GET') {
+                $this->policy->require('metrics.view'); $this->policy->server($id); $hours=Input::integer($_GET['hours']??1,'Período',1,720);
+                $bucket=max(10,(int)ceil($hours*3600/180));
+                $data=$this->db->all('SELECT MAX(created_at) AS created_at,AVG(cpu) AS cpu,AVG(ram) AS ram,AVG(disk) AS disk,AVG(network_rx_bps) AS network_rx_bps,AVG(network_tx_bps) AS network_tx_bps FROM server_metrics WHERE tenant_id=? AND server_id=? AND created_at>=? GROUP BY CAST(created_at / ? AS '.($this->db->driver()==='mysql'?'UNSIGNED':'INTEGER').') ORDER BY created_at',[$u['tenant_id'],$id,time()-$hours*3600,$bucket]);
+                return ['data'=>$data,'server_time'=>time(),'hours'=>$hours];
+            }
         }
         if(preg_match('#^/([a-z_]+)(?:/(\d+))?$#D',$path,$m) && isset(Catalog::RESOURCES[$m[1]])) {
             $kind=$m[1]; $id=isset($m[2])?(int)$m[2]:null;
@@ -46,6 +51,36 @@ final class ApiController
         if($path==='/notifications' && $method==='GET') return ['data'=>$this->db->all('SELECT * FROM notifications WHERE tenant_id=? AND user_id=? ORDER BY id DESC LIMIT 100',[$u['tenant_id'],$u['id']])];
         if(preg_match('#^/notifications/(\d+)/read$#D',$path,$m) && $method==='POST') { $this->db->query('UPDATE notifications SET read_at=? WHERE id=? AND tenant_id=? AND user_id=?',[time(),$m[1],$u['tenant_id'],$u['id']]); return ['message'=>'Notificação lida.']; }
         if($path==='/files' && $method==='POST') return $this->files($data);
+        if(preg_match('#^/databases/(\d+)/(access|password)$#D',$path,$m)) {
+            $this->policy->require('databases.'.($m[2]==='access'?'view':'edit'));
+            $r=$resources->find('databases',(int)$m[1]);
+            if($r['status']!=='active') throw new HttpError(409,'Aguarde a criação do banco. Consulte Operações para acompanhar.');
+            $server=$this->policy->server((int)$r['server_id']);
+            if($m[2]==='access' && $method==='GET') {
+                $local=in_array(parse_url($server['agent_url'],PHP_URL_HOST),['localhost','127.0.0.1'],true);
+                return ['name'=>$r['name'],'username'=>$r['name'],'host'=>'localhost','port'=>3306,'phpmyadmin_url'=>$local?rtrim(getenv('APP_URL'),'/').'/phpmyadmin/':null];
+            }
+            if($m[2]==='password' && $method==='POST') {
+                $payload=['tenant_id'=>(int)$r['tenant_id'],'owner_id'=>(int)$r['owner_id'],'resource_id'=>(int)$r['id'],'password'=>Input::password($data['password']??'')];
+                $job=(new Jobs($this->db))->enqueue($this->policy->owner((int)$r['owner_id']),(int)$r['server_id'],'database_password',$payload);
+                Audit::write($this->db,$u,'databases.password',$r['name'],'queued');
+                return ['job_id'=>$job,'message'=>'Alteração de senha adicionada à fila.'];
+            }
+        }
+        if(preg_match('#^/websites/(\d+)/php$#D',$path,$m) && $method==='POST') {
+            $this->policy->require('websites.edit');
+            return $this->db->transaction(function() use($m,$data,$resources,$u){
+                $this->db->lockTenant((int)$u['tenant_id']);
+                $r=$resources->find('websites',(int)$m[1]);
+                if($r['status']!=='active') throw new HttpError(409,'Aguarde a operação atual do site.');
+                $version=Input::choice($data['php_version']??'',\App\Models\PhpVersions::ALL,'PHP');
+                $payload=['tenant_id'=>(int)$r['tenant_id'],'owner_id'=>(int)$r['owner_id'],'resource_id'=>(int)$r['id'],'php_version'=>$version];
+                $job=(new Jobs($this->db))->enqueue($this->policy->owner((int)$r['owner_id']),(int)$r['server_id'],'change_php',$payload,'websites',(int)$r['id']);
+                $this->db->query("UPDATE websites SET status='pending',updated_at=? WHERE id=?",[time(),$r['id']]);
+                Audit::write($this->db,$u,'websites.php',$r['name'],'queued');
+                return ['job_id'=>$job,'message'=>'Troca de PHP adicionada à fila.'];
+            });
+        }
         if($path==='/backup_schedules') {
             if($method==='GET') return ['data'=>(new BackupScheduler($this->db))->list($this->policy)];
             if($method==='POST') return (new BackupScheduler($this->db))->create($this->policy,$data);
@@ -85,8 +120,9 @@ final class ApiController
         foreach((new Quota($this->db))->chain($u) as $account) if($account['role']!=='MASTER' && !in_array('files',(new Quota($this->db))->plan($account)['features']??[],true)) throw new HttpError(403,'Gerenciador de arquivos não permitido pelo plano.');
         $site=(new ResourceService($this->db,$this->policy))->find('websites',Input::integer($d['website_id']??null,'Site'));
         if($site['status']!=='active') throw new HttpError(409,'Site ainda não está ativo.');
-        $action=Input::choice($d['action']??'list',['list','read','write','mkdir','delete','rename','copy','zip','unzip','chmod'],'Ação');
+        $action=Input::choice($d['action']??'list',['list','read','write','mkdir','delete','rename','copy','zip','unzip','chmod','trash','trash_list','restore','purge','download','upload_begin','upload_chunk','upload_finish','upload_cancel','info'],'Ação');
         $payload=['tenant_id'=>(int)$site['tenant_id'],'owner_id'=>(int)$site['owner_id'],'website_id'=>(int)$site['id'],'domain'=>$site['name'],'action'=>$action,'path'=>$d['path']??'','target'=>$d['target']??'','content'=>$d['content']??'','mode'=>$d['mode']??'644'];
+        foreach(['id','offset','size'] as $key) if(array_key_exists($key,$d)) $payload[$key]=$d[$key];
         $server=$this->policy->server((int)$site['server_id']);
         $result=(new AgentClient($this->db))->call($server,'files',$payload,bin2hex(random_bytes(16)));
         Audit::write($this->db,$u,'files.'.$action,$site['name']); return $result;

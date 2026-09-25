@@ -10,10 +10,12 @@ from pathlib import Path
 from validation import integer, domain, identifier, choice, password, inside, cron, source, Rejected
 from runtime import run, atomic_write, unprivileged
 import files
+import tls
+PHP_VERSIONS = ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
 
 
 class Operations:
-    SERVICES = ['nginx', 'php8.3-fpm', 'php8.4-fpm', 'mariadb', 'redis-server', 'docker', 'cron']
+    SERVICES = ['nginx', *[f'php{v}-fpm' for v in PHP_VERSIONS], 'mariadb', 'redis-server', 'docker', 'cron']
     def __init__(self, state='/var/lib/vpsmanager-agent', root='/srv/vpsmanager'):
         self.state = Path(state)
         self.root = Path(root)
@@ -37,7 +39,7 @@ class Operations:
         self.catalog.commit()
 
     def execute(self, operation, p):
-        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup']
+        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'change_php']
         kinds = ['site', 'domain', 'database', 'ssl', 'sftp', 'backup', 'cron', 'firewall', 'container']
         allowed += [f'{verb}_{kind}' for verb in ['create', 'delete'] for kind in kinds]
         if operation not in allowed:
@@ -49,7 +51,7 @@ class Operations:
             values = [int(n) for n in Path('/proc/stat').read_text().splitlines()[0].split()[1:]]
             return sum(values[:8]), values[3] + values[4]
         first, idle = cpu_sample()
-        time.sleep(0.2)
+        time.sleep(0.5)
         second, idle2 = cpu_sample()
         mem = {line.split(':')[0]: int(line.split()[1]) for line in Path('/proc/meminfo').read_text().splitlines()}
         disk = shutil.disk_usage(self.root if self.root.exists() else '/')
@@ -61,7 +63,10 @@ class Operations:
         return {'cpu': round(100 * (1 - (idle2-idle)/max(1,second-first)), 2),
                 'ram': round(100 * (1-mem['MemAvailable']/mem['MemTotal']), 2),
                 'disk': round(100 * disk.used/disk.total, 2), 'load_avg': os.getloadavg()[0],
-                'uptime': int(float(Path('/proc/uptime').read_text().split()[0])), 'network_rx': rx, 'network_tx': tx}
+                'uptime': int(float(Path('/proc/uptime').read_text().split()[0])), 'network_rx': rx, 'network_tx': tx,
+                'cpu_count': os.cpu_count() or 1, 'memory_total': mem['MemTotal'] * 1024,
+                'memory_used': (mem['MemTotal'] - mem['MemAvailable']) * 1024,
+                'disk_total': disk.total, 'disk_used': disk.used}
 
     def services(self, p):
         result = []
@@ -84,10 +89,10 @@ class Operations:
     def create_site(self, p):
         import pwd
         import grp
-        host = domain(p.get('domain'))
-        if host == os.getenv('VPM_PANEL_HOST'):
+        host = tls.host(p.get('domain'))
+        if host == os.getenv('VPM_PANEL_HOST') and not host.replace('.', '').isdigit():
             raise Rejected('This hostname is reserved for the control panel')
-        version = choice(p.get('php_version'), ['8.3', '8.4'])
+        version = choice(p.get('php_version'), PHP_VERSIONS)
         tenant = integer(p['tenant_id']); rid = integer(p['resource_id'])
         username = f'vpm{tenant}s{rid}'
         identifier(username)
@@ -152,6 +157,8 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
     }}
 }}
 '''
+        cert, key = tls.local_certificate(host)
+        nginx_text = tls.secure_config(nginx_text, host, cert, key)
         atomic_write(pool, pool_text)
         atomic_write(nginx, nginx_text)
         try:
@@ -162,7 +169,12 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
         run(['/usr/bin/systemctl', 'reload', 'nginx'])
         self.save('site', p, {'domain': host, 'home': str(home), 'public': str(public), 'username': username, 'php': version, 'nginx': str(nginx), 'pool': str(pool)})
-        return {'domain': host, 'path': str(public)}
+        result = {'domain': host, 'path': str(public), 'https': True, 'trusted': False}
+        try:
+            result.update(tls.upgrade_certificate(nginx, host, p.get('email', os.getenv('VPM_ACME_EMAIL', ''))))
+        except Exception:
+            result['message'] = 'HTTPS ativo com certificado local. Valide DNS/porta 80 e solicite certificado público no módulo SSL.'
+        return result
 
     def delete_site(self, p):
         s = self.find('site', p)
@@ -185,16 +197,25 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         elif kind == 'parked':
             content = f"server {{ listen 80; server_name {host}; return 204; }}\n"
         else:
-            content = Path(s['nginx']).read_text().replace('server_name ' + s['domain'] + ';', 'server_name ' + host + ';')
+            content = Path(s['nginx']).read_text()
             if 'listen 443' in content:
-                raise Rejected('Create aliases before issuing SSL; certificates are domain-specific')
+                content = content[content.index('server {', content.index('server {') + 1):]
+                content = re.sub(r'    ssl_(?:certificate|certificate_key|protocols) [^;]+;\n', '', content).replace('listen 443 ssl;', 'listen 80;')
+            content = content.replace('server_name ' + s['domain'] + ';', 'server_name ' + host + ';')
+        cert, key = tls.local_certificate(host)
+        content = tls.secure_config(content, host, cert, key)
         atomic_write(path, content)
         try:
             run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
         except Exception:
             path.unlink(missing_ok=True); raise
         self.save('domain', p, {'domain': host, 'path': str(path)})
-        return {'domain': host}
+        result = {'domain': host, 'https': True, 'trusted': False}
+        try:
+            result.update(tls.upgrade_certificate(path, host, os.getenv('VPM_ACME_EMAIL', '')))
+        except Exception:
+            result['message'] = 'Certificado local; validação pública pendente.'
+        return result
 
     def delete_domain(self, p):
         d = self.find('domain', p); Path(d['path']).unlink(missing_ok=True)
@@ -219,11 +240,72 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=f"DROP DATABASE IF EXISTS `{name}`; DROP USER IF EXISTS '{name}'@'localhost';")
         self.forget('database', p); return {'message': 'Database removed'}
 
+    def database_password(self, p):
+        import hashlib
+        d = self.find('database', p)
+        name = identifier(d['name']); secret = password(p['password'])
+        digest = '*' + hashlib.sha1(hashlib.sha1(secret.encode()).digest()).hexdigest().upper()
+        run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=f"SET PASSWORD FOR '{name}'@'localhost' = '{digest}';")
+        return {'message': 'Password updated'}
+
+    def change_php(self, p):
+        s = self.find('site', p)
+        version = choice(p.get('php_version'), PHP_VERSIONS)
+        if version == s['php']:
+            return {'php_version': version}
+        if not Path(f'/usr/sbin/php-fpm{version}').is_file():
+            raise Rejected('Requested PHP version is not installed')
+        old_pool = Path(s['pool']); previous = old_pool.read_text()
+        new_pool = Path(f'/etc/php/{version}/fpm/pool.d') / old_pool.name
+        if new_pool.exists():
+            raise Rejected('Destination PHP pool already exists')
+        old_socket = re.search(r'^listen = (.+)$', previous, re.M).group(1)
+        new_socket = f"/run/php/vpm-{integer(p['tenant_id'])}-{integer(p['resource_id'])}-php{version}.sock"
+        configs = {}
+        for config in Path('/etc/nginx/conf.d').glob('vpm-*.conf'):
+            text = config.read_text()
+            if f'fastcgi_pass unix:{old_socket};' in text:
+                configs[config] = text
+        atomic_write(new_pool, previous.replace('listen = ' + old_socket, 'listen = ' + new_socket))
+        try:
+            run([f'/usr/sbin/php-fpm{version}', '-t'])
+            run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
+            for config, text in configs.items():
+                atomic_write(config, text.replace(f'fastcgi_pass unix:{old_socket};', f'fastcgi_pass unix:{new_socket};'))
+            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+            old_pool.unlink()
+            run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
+        except Exception:
+            new_pool.unlink(missing_ok=True)
+            atomic_write(old_pool, previous)
+            for config, text in configs.items():
+                atomic_write(config, text)
+            run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
+            run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
+            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+            raise
+        # Keep existing cron commands in sync with this site's PHP runtime.
+        for row in self.catalog.execute("SELECT data FROM resources WHERE tenant=? AND kind='cron'", (p['tenant_id'],)).fetchall():
+            cron_path = Path(json.loads(row['data'])['path'])
+            content = cron_path.read_text()
+            marker = f" {s['username']} /usr/bin/php{s['php']} "
+            if marker in content:
+                atomic_write(cron_path, content.replace(marker, f" {s['username']} /usr/bin/php{version} "), 0o644)
+        s.update(php=version, pool=str(new_pool))
+        self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='site' AND id=?", (json.dumps(s), p['tenant_id'], p['resource_id']))
+        self.catalog.commit()
+        return {'php_version': version}
+
     def create_ssl(self, p):
         s = self.find('site', p, 'website_id'); email = p.get('email', '')
         if not isinstance(email, str) or not re.fullmatch(r'[a-zA-Z0-9_.+%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}', email):
             raise Rejected('Invalid ACME email')
-        run(['/usr/bin/certbot', '--nginx', '--non-interactive', '--agree-tos', '--redirect', '--email', email, '--cert-name', s['domain'], '-d', s['domain']], timeout=150)
+        config = Path(s['nginx'])
+        if 'listen 443' not in config.read_text():
+            cert, key = tls.local_certificate(s['domain'])
+            atomic_write(config, tls.secure_config(config.read_text(), s['domain'], cert, key))
+            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+        tls.upgrade_certificate(config, s['domain'], email)
         self.save('ssl', p, {'domain': s['domain']}); return {'domain': s['domain']}
 
     def delete_ssl(self, p):
@@ -292,7 +374,9 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
     def files(self, p):
         import pwd
         s = self.find('site', p, 'website_id'); account = pwd.getpwnam(s['username'])
-        return unprivileged(account, lambda: files.operate(s['public'], p))
+        private = Path(s['home']) / '.file-manager'
+        private.mkdir(mode=0o700, exist_ok=True); os.chown(private, account.pw_uid, account.pw_gid)
+        return unprivileged(account, lambda: files.operate(s['public'], p, private))
 
     def create_backup(self, p):
         import pwd

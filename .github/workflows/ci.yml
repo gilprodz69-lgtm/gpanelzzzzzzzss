@@ -34,10 +34,23 @@ jobs:
           TEST_MYSQL_PORT: 3307
         run: php tests/mysql.php
       - name: Agent tests
-        run: python3 tests/test_agent.py
+        run: |
+          python3 tests/test_agent.py
+          python3 tests/test_files.py
       - name: Installer syntax and payload
         run: |
-          bash -n install.sh scripts/install-ubuntu.sh scripts/update.sh
+          for script in install.sh scripts/*.sh; do bash -n "$script"; done
           sudo env VPM_VERIFY_ONLY=1 bash install.sh
       - name: Validate distribution manifest
         run: python3 tests/test_release.py
+  installed-host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install, exercise hosting operations and update
+        run: sudo --preserve-env=GITHUB_ACTIONS bash tests/install-host.sh
+      - name: Service diagnostics on failure
+        if: failure()
+        run: |
+          sudo journalctl -u nginx -u php8.3-fpm -u vpsmanager-agent -u vpsmanager-worker -u vpsmanager-metrics.service --no-pager -n 100

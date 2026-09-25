@@ -13,7 +13,7 @@ VERSION = (ROOT / 'VERSION').read_text().strip()
 DIST = ROOT / 'dist'
 DIST.mkdir(exist_ok=True)
 FOLDERS = ['app', 'agent', 'database', 'deploy', 'public', 'resources', 'docs']
-SCRIPT_NAMES = ['console.php', 'health.php', 'register-local-server.php', 'install-ubuntu.sh', 'update.sh']
+SCRIPT_NAMES = ['console.php', 'health.php', 'register-local-server.php', 'install-ubuntu.sh', 'update.sh', 'install-runtime.sh', 'upgrade-ubuntu.sh', 'upgrade-config.php', 'panel-certificate.py']
 SINGLE_FILES = ['README.md', 'VERSION', '.env.example', 'composer.json', 'compose.yaml', '.dockerignore']
 paths = [ROOT / name for name in SINGLE_FILES]
 paths += [ROOT / 'scripts' / name for name in SCRIPT_NAMES]
@@ -77,7 +77,20 @@ vpm_install() {
         echo 'OK: checksum, extração e sintaxe do instalador.'
         return 0
     fi
-    bash "$vpm_work/project/scripts/install-ubuntu.sh" "$@"
+    if [[ -d /opt/vpsmanager/current ]]; then
+        echo 'Painel instalado detectado. 1) Atualizar Painel  2) Cancelar'
+        vpm_choice=${VPM_UPDATE:-}
+        if [[ -z "$vpm_choice" ]]; then
+            [[ -r /dev/tty ]] || { echo 'Defina VPM_UPDATE=1 para atualizar sem interação.' >&2; return 1; }
+            printf 'Opção [1]: ' > /dev/tty
+            read -r vpm_choice < /dev/tty
+            vpm_choice=${vpm_choice:-1}
+        fi
+        [[ "$vpm_choice" == 1 ]] || { echo 'Cancelado.'; return 0; }
+        bash "$vpm_work/project/scripts/upgrade-ubuntu.sh" "$@"
+    else
+        bash "$vpm_work/project/scripts/install-ubuntu.sh" "$@"
+    fi
 }
 vpm_install "$@"
 '''.replace('__VERSION__', VERSION).replace('__PAYLOAD__', payload).replace('__SHA256__', digest)

@@ -1,8 +1,9 @@
 [Unit]
-Description=Collect VPS metrics every minute
+Description=Collect VPS metrics every 10 seconds
 [Timer]
-OnBootSec=60
-OnUnitActiveSec=60
+OnBootSec=15
+OnUnitInactiveSec=10
+AccuracySec=1s
 Persistent=true
 [Install]
 WantedBy=timers.target

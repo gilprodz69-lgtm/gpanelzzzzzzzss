@@ -56,13 +56,14 @@ if [[ "$VERSION_ID" == 22.04 ]]; then
     add-apt-repository -y ppa:ondrej/php
     apt-get update
 fi
-apt-get install -y nginx mariadb-server python3 openssh-server ufw cron certbot python3-certbot-nginx php8.3-cli php8.3-fpm php8.3-mysql php8.3-curl php8.3-mbstring php8.3-sqlite3
+apt-get install -y nginx mariadb-server python3 openssh-server ufw cron
+bash "$project_dir/scripts/install-runtime.sh"
 if [[ ${INSTALL_DOCKER:-1} == 1 ]]; then apt-get install -y docker.io; fi
 php8.3 -r 'if (PHP_VERSION_ID < 80300 || !extension_loaded("sodium") || !extension_loaded("pdo_mysql")) exit(1);'
 stage='arquivos e contas do sistema'
 id vpsmanager >/dev/null 2>&1 || useradd --system --user-group --home-dir /opt/vpsmanager --shell /usr/sbin/nologin vpsmanager
 release_dir="/opt/vpsmanager/releases/$(date -u +%Y%m%d%H%M%S)"
-install -d -m 0755 "$release_dir" /opt/vpsmanager/shared /srv/vpsmanager /var/lib/vpsmanager-acme /etc/letsencrypt /var/mail
+install -d -m 0755 "$release_dir" /opt/vpsmanager/shared /srv/vpsmanager /var/lib/vpsmanager-acme /etc/letsencrypt /var/lib/letsencrypt /var/mail
 install -d -m 0700 /etc/vpsmanager /var/lib/vpsmanager-agent
 install -d -o vpsmanager -g vpsmanager -m 0750 /opt/vpsmanager/shared/storage /opt/vpsmanager/shared/storage/logs /opt/vpsmanager/shared/storage/cache /opt/vpsmanager/shared/storage/backups
 rsync -a --exclude=.tools --exclude=.env --exclude=.git --exclude=node_modules --exclude=test-results --exclude=storage --exclude=dist "$project_dir/" "$release_dir/"
@@ -132,6 +133,7 @@ server {
     root /opt/vpsmanager/current/public;
     index index.php;
     client_max_body_size 2m;
+    include /etc/nginx/snippets/vpm-phpmyadmin.conf;
     location / { try_files \$uri /index.php?\$query_string; }
     location = /index.php {
         include fastcgi_params;
@@ -163,14 +165,11 @@ ufw allow 443/tcp
 ufw allow "$PANEL_PORT/tcp"
 # Preserve current firewall default policy. No access to database or agent is opened.
 trusted_certificate=0
-if [[ $is_domain -eq 1 ]]; then
-    stage='certificado público'
-    if certbot certonly --webroot -w /var/lib/vpsmanager-acme --non-interactive --agree-tos --email "$ADMIN_EMAIL" --cert-name "$PANEL_HOST" -d "$PANEL_HOST"; then
-        sed -i "s|/etc/vpsmanager/panel.crt|/etc/letsencrypt/live/$PANEL_HOST/fullchain.pem|;s|/etc/vpsmanager/panel.key|/etc/letsencrypt/live/$PANEL_HOST/privkey.pem|" /etc/nginx/conf.d/vpsmanager-panel.conf
-        trusted_certificate=1
-    else
-        echo 'DNS/ACME ainda não validado. O painel usará certificado local até configurar um certificado público.'
-    fi
+stage='certificado público'
+if python3 "$release_dir/scripts/panel-certificate.py" "$PANEL_HOST" "$ADMIN_EMAIL"; then
+    trusted_certificate=1
+else
+    echo 'HTTPS local ativo. Validação pública pendente: verifique DNS/IP e porta 80.'
 fi
 install -d -m 0755 /etc/letsencrypt/renewal-hooks/deploy
 printf '#!/bin/sh\n/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx\n' > /etc/letsencrypt/renewal-hooks/deploy/vpsmanager-nginx
@@ -180,12 +179,13 @@ touch /etc/subuid /etc/subgid
 cat > /etc/vpsmanager/agent.env <<EOF
 VPM_PROTECTED_PORTS=$ssh_port,80,443,9443,$PANEL_PORT
 VPM_PANEL_HOST=$PANEL_HOST
+VPM_ACME_EMAIL=$ADMIN_EMAIL
 VPM_DOCKER_IMAGES=nginx:stable-alpine,redis:7-alpine
 EOF
-install -m 0644 "$release_dir"/deploy/vpsmanager-*.service "$release_dir"/deploy/vpsmanager-metrics.timer /etc/systemd/system/
+install -m 0644 "$release_dir"/deploy/vpsmanager-*.service "$release_dir"/deploy/vpsmanager-*.timer /etc/systemd/system/
 nginx -t
 systemctl daemon-reload
-systemctl enable --now vpsmanager-agent vpsmanager-worker vpsmanager-metrics.timer certbot.timer
+systemctl enable --now vpsmanager-agent vpsmanager-worker vpsmanager-metrics.timer vpsmanager-certificates.timer
 systemctl reload nginx
 stage='verificações finais'
 sleep 2

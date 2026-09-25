@@ -7,6 +7,7 @@
   <title>VPS Manager</title>
   <link rel="icon" href="/images/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/file-manager.css">
   <script src="/js/app.js" type="module"></script>
 </head>
 <body>

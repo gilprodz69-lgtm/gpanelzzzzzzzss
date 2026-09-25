@@ -1,0 +1,10 @@
+[Unit]
+Description=Renew VPS Manager HTTPS certificates
+After=network-online.target nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vpsmanager/acme/bin/certbot renew --quiet
+ExecStartPost=/usr/sbin/nginx -t
+ExecStartPost=/usr/bin/systemctl reload nginx
+TimeoutStartSec=600
