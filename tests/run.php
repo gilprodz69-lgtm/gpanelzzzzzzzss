@@ -58,6 +58,25 @@ check('Bearer token intersects account permissions',function()use($db,$clientId)
 check('individual permission revoke',function()use($db,$client,$clientId){$db->insert('user_permissions',['user_id'=>$clientId,'permission'=>'websites.create','allowed'=>0]);denied(fn()=>$client->require('websites.create'),403);});
 check('composite foreign key rejects cross tenant owner',function()use($db,$other,$clientId,$server){try{$db->insert('websites',['tenant_id'=>$other,'owner_id'=>$clientId,'server_id'=>$server,'name'=>'cross.example.com','config_json'=>'{}','created_at'=>time(),'updated_at'=>time()]);}catch(PDOException){return;}throw new RuntimeException('Cross-tenant foreign key accepted');});
 check('audit records exclude credentials',function()use($db){$audit=json_encode($db->all('SELECT * FROM audit_logs'));eq(str_contains($audit,'SecureTest'),false);eq(str_contains($audit,'DatabaseSecret'),false);});
+check('all six supported PHP versions enqueue exact runtime',function()use($db,$master,$server){
+    $service=new ResourceService($db,$master);
+    foreach(\App\Models\PhpVersions::ALL as $version){
+        $r=$service->create('websites',['server_id'=>$server,'domain'=>'php'.str_replace('.','',$version).'.example.com','php_version'=>$version]);
+        $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$r['job_id']])),true);
+        eq($payload['php_version'],$version);
+    }
+    denied(fn()=>$service->create('websites',['server_id'=>$server,'domain'=>'invalid.example.com','php_version'=>'8.4;id']),422);
+});
+check('IP site is restricted to administrator and selected server address',function()use($db,$master,$server){
+    denied(fn()=>(new ResourceService($db,$master))->create('websites',['server_id'=>$server,'domain'=>'192.0.2.44','php_version'=>'8.3']),422);
+});
+check('metrics migration preserves existing samples and resumes',function()use($db,$tenant,$server){
+    $id=$db->insert('server_metrics',['tenant_id'=>$tenant,'server_id'=>$server,'cpu'=>0.25,'ram'=>18.4,'disk'=>3.2,'load_avg'=>0.1,'uptime'=>120,'network_rx'=>10000,'network_tx'=>500,'network_rx_bps'=>125.5,'created_at'=>time()]);
+    (require BASE_PATH.'/database/migrations/003_monitoring.php')($db);
+    $row=$db->one('SELECT * FROM server_metrics WHERE id=?',[$id]);eq((float)$row['cpu'],0.25);eq((float)$row['network_rx_bps'],125.5);
+    $rows=$db->all('SELECT MAX(created_at) AS created_at,AVG(cpu) AS cpu FROM server_metrics WHERE tenant_id=? AND server_id=? AND created_at>=? GROUP BY CAST(created_at / ? AS '.($db->driver()==='mysql'?'UNSIGNED':'INTEGER').') ORDER BY created_at',[$tenant,$server,time()-86400,480]);
+    eq(count($rows),1);eq((float)$rows[0]['cpu'],0.25);
+});
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

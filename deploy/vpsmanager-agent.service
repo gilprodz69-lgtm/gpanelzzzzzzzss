@@ -8,6 +8,7 @@ Type=simple
 User=root
 WorkingDirectory=/opt/vpsmanager/current/agent
 ExecStart=/usr/bin/python3 /opt/vpsmanager/current/agent/server.py
+ExecStartPost=/usr/bin/python3 /opt/vpsmanager/current/scripts/wait-agent.py
 EnvironmentFile=-/etc/vpsmanager/agent.env
 Restart=on-failure
 RestartSec=5

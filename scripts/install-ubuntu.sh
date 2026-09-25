@@ -195,7 +195,7 @@ runuser -u vpsmanager -- php8.3 "$release_dir/scripts/health.php"
 umask 077
 printf 'URL: https://%s:%s\nE-mail: %s\nSenha inicial: %s\n' "$PANEL_HOST" "$PANEL_PORT" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" > /root/vpsmanager-access.txt
 chmod 0600 /root/vpsmanager-access.txt
-if [[ -w /dev/tty ]]; then
+if ( : > /dev/tty ) 2>/dev/null; then
     printf '\nVPS Manager instalado!\nAcesse: https://%s:%s\nE-mail: %s\nSenha inicial: %s\n\n' "$PANEL_HOST" "$PANEL_PORT" "$ADMIN_EMAIL" "$ADMIN_PASSWORD" > /dev/tty
 fi
 unset ADMIN_PASSWORD database_password app_key

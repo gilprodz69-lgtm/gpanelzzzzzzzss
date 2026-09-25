@@ -310,8 +310,20 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
 
     def delete_ssl(self, p):
         self.find('ssl', p)
-        # Removing a certificate referenced by Nginx would break the host; manual detach is required.
-        raise Rejected('Detach HTTPS from the virtual host before deleting the certificate; automated revocation is not released')
+        s = self.find('site', p, 'website_id')
+        cert, key = tls.local_certificate(s['domain'])
+        config = Path(s['nginx']); before = config.read_text()
+        content = re.sub(r'ssl_certificate\s+[^;]+;', f'ssl_certificate {cert};', before)
+        content = re.sub(r'ssl_certificate_key\s+[^;]+;', f'ssl_certificate_key {key};', content)
+        atomic_write(config, content)
+        try:
+            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+        except Exception:
+            atomic_write(config, before)
+            raise
+        # Keep shared ACME files intact: the panel or another host may still reference them.
+        self.forget('ssl', p)
+        return {'message': 'Certificate detached. HTTPS remains enabled with a local certificate.'}
 
     def create_sftp(self, p):
         import pwd

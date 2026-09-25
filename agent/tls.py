@@ -10,11 +10,11 @@ WEBROOT = '/var/lib/vpsmanager-acme'
 def host(value):
     try:
         address = ipaddress.ip_address(value)
-        if address.version != 4 or not address.is_global:
-            raise Rejected('Use a public IPv4 address')
-        return str(address)
     except ValueError:
         return domain(value)
+    if address.version != 4 or not address.is_global:
+        raise Rejected('Use a public IPv4 address')
+    return str(address)
 
 def local_certificate(name):
     name = host(name)

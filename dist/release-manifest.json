@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 24757,
-      "sha256": "c03c015fe24d35a126fcfefae3fcdd6b4b5a834beea0b2305deaafe4e76ce440"
+      "bytes": 25327,
+      "sha256": "0dc6b61c2cc98e5c2a59872ea8067d10139dcb2d878f1dbb6812c5f5d25e1ea5"
     },
     {
       "path": "agent/runtime.py",
@@ -43,8 +43,8 @@
     },
     {
       "path": "agent/tls.py",
-      "bytes": 2810,
-      "sha256": "c8a07b2db9e2c7b301f0027ea2d2005842edfc89871c719e23f7e713a73c815a"
+      "bytes": 2798,
+      "sha256": "afe6d323dc4ddff56de54a3c35429da110cb41c79da9f9840c045089f931dd7e"
     },
     {
       "path": "agent/validation.py",
@@ -193,8 +193,8 @@
     },
     {
       "path": "deploy/vpsmanager-agent.service",
-      "bytes": 601,
-      "sha256": "96e879f525bb3e3bbbff647e0a3086a6754e25a14be94445cae12e6c045e55a2"
+      "bytes": 678,
+      "sha256": "4aa095065c4e6f43dc2688ce4c7bfe841e12c220bb3c43b0051abf3378de49ff"
     },
     {
       "path": "deploy/vpsmanager-certificates.service",
@@ -208,8 +208,8 @@
     },
     {
       "path": "deploy/vpsmanager-metrics.service",
-      "bytes": 395,
-      "sha256": "1ecc7bc50d9c2098b95eb7cc7c1d950c537dc507d1bd1ce43211f84cd7a76ab8"
+      "bytes": 454,
+      "sha256": "637047559864f4059eef39c9a0dbe08be782448ad12efb085f6fb761ebb30d6b"
     },
     {
       "path": "deploy/vpsmanager-metrics.timer",
@@ -218,8 +218,8 @@
     },
     {
       "path": "deploy/vpsmanager-worker.service",
-      "bytes": 495,
-      "sha256": "79392cfeeac7f0003c75340aeb6f8147912a688b696e6242468e826b8e68c1b4"
+      "bytes": 554,
+      "sha256": "27974f18012f24e8147f736d9ad338b99951fb92663f6b4fdd900614079d6636"
     },
     {
       "path": "docs/AAPANEL-REFERENCE.md",
@@ -343,13 +343,13 @@
     },
     {
       "path": "scripts/install-ubuntu.sh",
-      "bytes": 10601,
-      "sha256": "8c30c551bd27b1cbd5f14cd8c07926dd63c695c5149aca4aae1d2f1b6b0ec885"
+      "bytes": 10612,
+      "sha256": "353e0362a79909092b7722f7ceecb2707e92dfdaa417dfe044ef3c7690e3eb39"
     },
     {
       "path": "scripts/panel-certificate.py",
-      "bytes": 350,
-      "sha256": "53e2150a90ffd66c3d19197fd63abc53bcb766c03cced87b0b48450dc4ad33ab"
+      "bytes": 499,
+      "sha256": "6fe22a0953c6bd06d07de53abace379c6d7888b1d7b813da3981be065ac28fe5"
     },
     {
       "path": "scripts/register-local-server.php",
@@ -370,6 +370,11 @@
       "path": "scripts/upgrade-ubuntu.sh",
       "bytes": 4921,
       "sha256": "274233099933269dcf632241f986be320e6f52291f5c4966890ed25e2adbdf9a"
+    },
+    {
+      "path": "scripts/wait-agent.py",
+      "bytes": 266,
+      "sha256": "7db3df0a07321101e008b392583349e99cbc28f7e8624fb11d475072f98e868b"
     }
   ]
 }

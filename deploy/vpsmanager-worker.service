@@ -1,6 +1,7 @@
 [Unit]
 Description=VPS Manager operation queue
-After=network-online.target mariadb.service
+After=network-online.target mariadb.service vpsmanager-agent.service
+Requires=vpsmanager-agent.service
 Wants=network-online.target
 
 [Service]

@@ -1,6 +1,7 @@
 [Unit]
 Description=VPS Manager metrics collection
-After=network-online.target mariadb.service
+After=network-online.target mariadb.service vpsmanager-agent.service
+Requires=vpsmanager-agent.service
 
 [Service]
 Type=oneshot
