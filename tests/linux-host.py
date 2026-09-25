@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import socket
 import ssl
+import http.client
 import sys
 from unittest.mock import patch
 if os.getenv('GITHUB_ACTIONS') != 'true' or os.geteuid() != 0:
@@ -17,9 +18,10 @@ def fetch(host, path='/'):
     with socket.create_connection(('127.0.0.1',443),timeout=10) as raw:
         with context.wrap_socket(raw,server_hostname=host) as conn:
             conn.sendall(f'GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n'.encode())
-            result=b''
-            while data:=conn.recv(65536):result+=data
-    assert b'200 OK' in result,result[:300]
+            response=http.client.HTTPResponse(conn)
+            response.begin()
+            result=response.read()
+            assert response.status==200,(response.status,result[:300])
     return result
 
 with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately against public DNS')):
