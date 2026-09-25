@@ -12,13 +12,17 @@ await page.route('**/api/v1/servers/*/metrics?*',route=>route.fulfill({json:{dat
 const password=(await readFile('storage/LOCAL-ACCESS.txt','utf8')).match(/Senha: (.+)/)[1].trim();
 await page.goto('http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
 for(const title of ['Últimos Sites Criados','Uso por Servidor','Atividades Recentes'])assert.equal(await page.getByRole('heading',{name:title,exact:true}).count(),0);
-for(const [width,height] of [[1920,950],[1536,864],[1440,900],[1366,768],[1280,720],[1024,768]]) {
+for(const [width,height] of [[1920,950],[1536,864],[1440,900],[1366,768],[1280,720],[1280,650],[1024,768]]) {
  await page.setViewportSize({width,height});await page.waitForTimeout(50);
  const size=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight}));
  assert(size.w<=width+1&&size.h<=height+1,`Dashboard overflow ${width}x${height}: ${JSON.stringify(size)}`);
  for(const selector of ['.greeting','.stats-grid','.resources-panel','.overview-panel','.chart-panel']) {
   const box=await page.locator(selector).boundingBox();assert(box.y+box.height<=height,`${selector} clipped at ${width}`);
  }
+ const bounds=await page.locator('.resources-panel').evaluate(e=>({bottom:e.getBoundingClientRect().bottom,captions:[...e.querySelectorAll('.gauge p')].map(p=>p.getBoundingClientRect().bottom)}));
+ assert(bounds.captions.every(y=>y<=bounds.bottom),`Resource captions clipped at ${width}x${height}`);
+ const chartBox=await page.locator('.chart-panel').boundingBox(),queueBox=await page.locator('.dashboard-page > .status-note').boundingBox();
+ assert(queueBox.y>=chartBox.y+chartBox.height,`Queue overlaps chart at ${width}x${height}`);
 }
 await page.setViewportSize({width:1536,height:864});await page.screenshot({path:'test-results/dashboard-compact.png',fullPage:true});
 await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
@@ -45,4 +49,4 @@ await page.screenshot({path:'test-results/cron-presets.png',fullPage:true});
 await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});
 assert.deepEqual(created,[{server_id:1,owner_id:Number(owner),website_id:801,schedule:'30 8 * * 1',path:'tasks/rotina.php'}]);
 assert.deepEqual(errors,[]);await browser.close();
-console.log('PASS compact dashboard on six desktop sizes, mobile width, all cron presets, site selection, custom schedule and create payload');
+console.log('PASS compact dashboard on seven desktop sizes, unclipped captions, mobile width, all cron presets, site selection, custom schedule and create payload');

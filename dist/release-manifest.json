@@ -283,8 +283,8 @@
     },
     {
       "path": "public/css/dashboard.css",
-      "bytes": 3332,
-      "sha256": "5f74b708e6222ed9163c20043319af271767c1f61125e8d00bd8372801d3052d"
+      "bytes": 4137,
+      "sha256": "dba67d0d176c854883a11ae2f3ddd861c233d7de8d96bce7591d49a406daf5e8"
     },
     {
       "path": "public/css/file-editor.css",
