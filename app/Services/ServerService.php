@@ -30,6 +30,37 @@ final class ServerService
             Audit::write($this->db,$this->policy->user,'servers.create',(string)$id); return ['id'=>$id,'message'=>'Servidor cadastrado. Aguardando a primeira coleta.'];
         });
     }
+    public function details(int $id): array {
+        $this->policy->require('servers.edit');
+        if(!$this->policy->isAdmin()) throw new HttpError(403,'Operação administrativa.');
+        return ['data'=>$this->policy->server($id)];
+    }
+    public function update(int $id,array $d): array {
+        $this->policy->require('servers.edit');
+        if(!$this->policy->isAdmin()) throw new HttpError(403,'Operação administrativa.');
+        $current=$this->policy->server($id);
+        $name=Input::text($d['name']??$current['name'],'Nome');
+        $address=Input::text($d['address']??$current['address'],'IP ou hostname',1,190);
+        if(!filter_var($address,FILTER_VALIDATE_IP)) $address=Input::domain($address);
+        $os=Input::text($d['os']??$current['os'],'Sistema operacional',1,80);
+        $url=Input::text($d['agent_url']??$current['agent_url'],'URL do agente',10,255);
+        $parts=parse_url($url);
+        $local=getenv('AGENT_ALLOW_HTTP_LOOPBACK')==='1' && in_array($parts['host']??'',['127.0.0.1','localhost'],true);
+        if(!$parts || !in_array($parts['scheme']??'',$local?['http','https']:['https'],true) || empty($parts['host']) || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment']) || !in_array($parts['path']??'',['','/'],true)) throw new HttpError(422,'Use https://host:porta sem caminho ou credenciais.');
+        $url=rtrim($url,'/');
+        $secret=null;
+        if(array_key_exists('agent_secret',$d) && $d['agent_secret']!=='') $secret=Input::text($d['agent_secret'],'Segredo do agente',32,128);
+        return $this->db->transaction(function() use($id,$current,$name,$address,$os,$url,$secret){
+            $this->db->lockTenant((int)$this->policy->user['tenant_id']);
+            $connectionChanged=$url!==$current['agent_url'] || $secret!==null;
+            if($connectionChanged && $this->db->scalar("SELECT COUNT(*) FROM jobs WHERE tenant_id=? AND server_id=? AND status IN ('pending','running')",[$current['tenant_id'],$id])) throw new HttpError(409,'Aguarde as operações do servidor antes de alterar a conexão do agente.');
+            $this->db->query('UPDATE servers SET name=?,address=?,os=?,agent_url=? WHERE tenant_id=? AND id=?',[$name,$address,$os,$url,$current['tenant_id'],$id]);
+            if($secret!==null) $this->db->query('UPDATE server_credentials SET secret=? WHERE server_id=?',[Crypto::encrypt($secret),$id]);
+            if($connectionChanged) $this->db->query("UPDATE servers SET status='unknown',last_seen=NULL WHERE id=?",[$id]);
+            Audit::write($this->db,$this->policy->user,'servers.update',(string)$id);
+            return ['message'=>'Servidor atualizado.'.($connectionChanged?' Aguardando a próxima coleta para validar a conexão.':'')];
+        });
+    }
     public function grant(int $id,array $d): array {
         $this->policy->require('servers.edit'); if(!$this->policy->isAdmin()) throw new HttpError(403,'Operação administrativa.');
         $this->policy->server($id); $u=$this->policy->owner(Input::integer($d['user_id']??null,'Conta'));

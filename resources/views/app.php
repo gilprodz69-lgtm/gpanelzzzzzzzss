@@ -8,6 +8,7 @@
   <link rel="icon" href="/images/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/file-manager.css">
+  <link rel="stylesheet" href="/css/login.css">
   <script src="/js/app.js" type="module"></script>
 </head>
 <body>

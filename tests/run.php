@@ -77,6 +77,45 @@ check('metrics migration preserves existing samples and resumes',function()use($
     $rows=$db->all('SELECT MAX(created_at) AS created_at,AVG(cpu) AS cpu FROM server_metrics WHERE tenant_id=? AND server_id=? AND created_at>=? GROUP BY CAST(created_at / ? AS '.($db->driver()==='mysql'?'UNSIGNED':'INTEGER').') ORDER BY created_at',[$tenant,$server,time()-86400,480]);
     eq(count($rows),1);eq((float)$rows[0]['cpu'],0.25);
 });
+check('server edit preserves secret, grants and hosted resources',function()use($db,$master,$server){
+    $secret=Crypto::encrypt(str_repeat('s',40));$db->insert('server_credentials',['server_id'=>$server,'secret'=>$secret]);
+    $sites=$db->scalar('SELECT COUNT(*) FROM websites WHERE server_id=?',[$server]);
+    $grants=$db->scalar('SELECT COUNT(*) FROM server_users WHERE server_id=?',[$server]);
+    (new ServerService($db,$master))->update($server,['name'=>'Updated server','address'=>'192.0.2.55','agent_secret'=>'']);
+    eq($db->scalar('SELECT name FROM servers WHERE id=?',[$server]),'Updated server');
+    eq($db->scalar('SELECT secret FROM server_credentials WHERE server_id=?',[$server]),$secret);
+    eq($db->scalar('SELECT COUNT(*) FROM websites WHERE server_id=?',[$server]),$sites);
+    eq($db->scalar('SELECT COUNT(*) FROM server_users WHERE server_id=?',[$server]),$grants);
+    eq(isset((new ServerService($db,$master))->details($server)['data']['secret']),false);
+});
+check('server edit denies clients and resellers even with explicit permission',function()use($db,$clientId,$resellerId,$user,$server){
+    foreach([$clientId,$resellerId] as $uid){$db->insert('user_permissions',['user_id'=>$uid,'permission'=>'servers.edit','allowed'=>1]);$service=new ServerService($db,new Policy($db,$user($uid)));denied(fn()=>$service->update($server,['name'=>'Forbidden']),403);denied(fn()=>$service->details($server),403);}
+});
+check('server editing enforces tenant and token scope',function()use($db,$outsider,$masterId,$user,$server){
+    denied(fn()=>(new ServerService($db,$outsider))->update($server,['name'=>'Forbidden']),404);
+    denied(fn()=>(new ServerService($db,new Policy($db,$user($masterId),['servers.view'])))->update($server,['name'=>'Forbidden']),403);
+});
+check('invalid server edit is atomic and busy agent connection is protected',function()use($db,$master,$server){
+    $service=new ServerService($db,$master);
+    denied(fn()=>$service->update($server,['name'=>'Must not save','address'=>'https://bad.example.com']),422);
+    foreach(['http://remote.example.com','file://localhost/etc/passwd','https://user:password@agent.example.com','https://agent.example.com/path'] as $url)denied(fn()=>$service->update($server,['name'=>'Must not save','agent_url'=>$url]),422);
+    denied(fn()=>$service->update($server,['agent_url'=>'https://new.example.com:9443']),409);
+    eq($db->scalar('SELECT name FROM servers WHERE id=?',[$server]),'Updated server');
+});
+check('admin can edit server and rotate encrypted credential when idle',function()use($db,$makeUser,$user,$tenant,$master){
+    $adminId=$makeUser('serveradmin','ADMIN',$tenant);$service=new ServerService($db,new Policy($db,$user($adminId)));
+    $id=(new ServerService($db,$master))->create(['name'=>'Idle server','address'=>'192.0.2.1','agent_url'=>'https://agent.example.com:9443','agent_secret'=>str_repeat('a',40)])['id'];
+    $service->update($id,['name'=>'Renamed server','agent_secret'=>str_repeat('b',40)]);
+    eq(Crypto::decrypt($db->scalar('SELECT secret FROM server_credentials WHERE server_id=?',[$id])),str_repeat('b',40));
+    eq($db->scalar('SELECT status FROM servers WHERE id=?',[$id]),'unknown');
+    eq(str_contains(json_encode($db->all('SELECT * FROM audit_logs')),str_repeat('b',40)),false);
+});
+check('nameservers normalize names and reject unsafe or incomplete settings',function(){
+    $valid=\App\Services\NameserverSettings::validate(['ns1'=>'NS1.Example.com','ns2'=>'ns2.example.com']);
+    eq($valid,['ns1'=>'ns1.example.com','ns2'=>'ns2.example.com','status'=>'pending_setup']);
+    foreach([['ns1'=>'ns1.example.com','ns2'=>''],['ns1'=>'ns1.example.com','ns2'=>'ns1.example.com'],['ns1'=>'https://ns1.example.com','ns2'=>'ns2.example.com'],['ns1'=>'192.0.2.1','ns2'=>'ns2.example.com']] as $data)denied(fn()=>\App\Services\NameserverSettings::validate($data),422);
+    eq(\App\Services\NameserverSettings::validate([])['status'],'not_configured');
+});
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

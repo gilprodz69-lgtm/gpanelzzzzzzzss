@@ -23,6 +23,7 @@ final class Catalog
     public static function defaults(string $role): array {
         if ($role === 'MASTER') return self::permissions();
         $p = ['dashboard.view','jobs.view','files.manage','websites.edit','databases.edit'];
+        if ($role === 'ADMIN') $p = array_merge($p, ['servers.view','servers.edit','metrics.view','settings.manage']);
         foreach (array_keys(self::RESOURCES) as $module) {
             if (in_array($module, ['firewall_rules','docker_containers'], true)) continue;
             foreach (['view','create','delete'] as $verb) $p[] = "$module.$verb";

@@ -1,4 +1,6 @@
-# Status de implementação — 0.2.1-preview
+# Status de implementação — 0.2.2-preview
+
+Versão 0.2.2: login centralizado conforme referência; gerenciador com barra de ações, navegação, favoritos da sessão, seleção por checkbox, lista/grade e menus; edição do servidor restrita a MASTER/ADMIN com permissão `servers.edit`; campos NS1/NS2 nas configurações administrativas. Salvar nameservers não instala DNS autoritativo nem altera a delegação do domínio; a ativação permanece pendente. A edição do cadastro do servidor não migra sites ou altera o IP do sistema operacional.
 
 Correção 0.2.1: permissões dos diretórios ancestrais do painel, configuração privada independente para phpMyAdmin e preservação da senha inicial imediatamente após criar o administrador. Instalação e atualização são testadas pelo mesmo `install.sh` distribuído, incluindo diretórios preexistentes com acesso restrito.
 

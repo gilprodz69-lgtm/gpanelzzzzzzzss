@@ -28,6 +28,10 @@ final class ApiController
         if($path==='/plans') { if($method==='GET') return ['data'=>$accounts->plans()]; if($method==='POST') return $accounts->savePlan($data); }
         if(preg_match('#^/plans/(\d+)$#D',$path,$m) && $method==='PATCH') return $accounts->savePlan($data,(int)$m[1]);
         if($path==='/servers') { if($method==='GET') return ['data'=>$servers->list()]; if($method==='POST') return $servers->create($data); }
+        if(preg_match('#^/servers/(\d+)$#D',$path,$m)) {
+            if($method==='GET') return $servers->details((int)$m[1]);
+            if($method==='PATCH') return $servers->update((int)$m[1],$data);
+        }
         if(preg_match('#^/servers/(\d+)/(grants|services|metrics)$#D',$path,$m)) {
             $id=(int)$m[1];
             if($m[2]==='grants' && $method==='POST') return $servers->grant($id,$data);
@@ -98,8 +102,13 @@ final class ApiController
             $this->policy->require('settings.manage');
             if($method==='GET') return ['data'=>$this->db->all('SELECT name,value_json FROM settings WHERE tenant_id=?',[$u['tenant_id']])];
             if($method==='POST') {
-                $name=Input::choice($data['name']??'',['branding','alerts'],'Configuração');
+                $name=Input::choice($data['name']??'',['branding','alerts','nameservers'],'Configuração');
+                if(!is_array($data['value']??null)) throw new HttpError(422,'Configuração inválida.');
                 if($name==='branding') $value=['name'=>Input::text($data['value']['name']??'','Nome',1,40)];
+                elseif($name==='nameservers') {
+                    if(!$this->policy->isAdmin()) throw new HttpError(403,'Operação administrativa.');
+                    $value=\App\Services\NameserverSettings::validate($data['value']);
+                }
                 else { $value=[]; foreach(['cpu','ram','disk'] as $k) $value[$k]=Input::integer($data['value'][$k]??90,$k,1,100); }
                 $this->db->transaction(function() use($u,$name,$value){$this->db->query('DELETE FROM settings WHERE tenant_id=? AND name=?',[$u['tenant_id'],$name]);$this->db->insert('settings',['tenant_id'=>$u['tenant_id'],'name'=>$name,'value_json'=>json_encode($value)]);});
                 Audit::write($this->db,$u,'settings.save',$name); return ['message'=>'Configuração salva.'];

@@ -23,8 +23,14 @@ await page.route('**/api/v1/files',async route=>{
 });
 await page.locator('[data-route=files]').click();await page.locator('[data-entry="assets"]').waitFor();
 await page.screenshot({path:'test-results/file-manager-desktop.png',fullPage:true});
+await page.locator('[data-entry="assets"] [data-check]').check();await page.locator('[data-entry="index.php"] [data-check]').check();assert.equal(await page.locator('[data-entry].selected').count(),2);
+await page.locator('.fm-sidebar [data-fm=invert]').click();assert.equal(await page.locator('[data-entry].selected').count(),0);
+await page.locator('#fm-search').fill('index');await page.locator('#fm-select-all').check();assert.equal(await page.locator('[data-entry].selected').count(),1);await page.locator('#fm-search').fill('');
+await page.locator('[data-entry="index.php"] [data-menu]').click();await page.locator('#fm-context [data-fm=rename]').waitFor();await page.keyboard.press('Escape');
+await page.locator('[data-fm=grid]').click();assert(await page.locator('#fm-list').evaluate(e=>e.classList.contains('fm-grid')));await page.locator('[data-fm=list]').click();
 await page.locator('[data-entry="assets"]').dblclick();await page.locator('#fm-breadcrumbs [data-path="assets"]').waitFor();
 assert(calls.some(c=>c.action==='list'&&c.path==='assets'));
+await page.locator('[data-fm=back]').click();await page.locator('[data-entry="index.php"]').waitFor();await page.locator('[data-fm=forward]').click();await page.locator('#fm-breadcrumbs [data-path="assets"]').waitFor();
 await page.locator('#fm-breadcrumbs [data-fm=home]').click();await page.locator('[data-entry="index.php"]').dblclick();await page.locator('textarea[name=content]').fill('<?php echo "Updated";');await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});
 assert(calls.some(c=>c.action==='write'&&Buffer.from(c.content,'base64').toString().includes('Updated')));
 await page.locator('[data-entry="index.php"]').click({button:'right'});await page.locator('#fm-context [data-fm=rename]').click();await page.locator('dialog input[name=target]').fill('main.php');await page.locator('dialog button[type=submit]').click();await page.locator('[data-entry="main.php"]').waitFor();

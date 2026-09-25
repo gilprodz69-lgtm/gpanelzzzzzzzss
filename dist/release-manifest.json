@@ -1,5 +1,5 @@
 {
-  "version": "0.2.1-preview",
+  "version": "0.2.2-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "f0fa4bcbb6bcc60f7b4606521c4ff94842e910add0d94b1a0f5c7db319c0f668"
+      "sha256": "574392d535364e4db87a41d825df85c92aa96185b0551ca2b98f9b87e474eeeb"
     },
     {
       "path": "agent/files.py",
@@ -53,8 +53,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 18759,
-      "sha256": "673381e47d635c2519853656383321b508a40a15343e981f53d1c9fd67632660"
+      "bytes": 19351,
+      "sha256": "7d6a9e4a64422793c6149406df09d8c030766811cb4747e43385fb104db3a0ba"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -73,8 +73,8 @@
     },
     {
       "path": "app/Models/Catalog.php",
-      "bytes": 2437,
-      "sha256": "e93982a73969654c02818bf8d0ab2631896ae5e2b6f59e85db9b5ddce79805c1"
+      "bytes": 2556,
+      "sha256": "97c154833c29af71d0e62da99bf19598a1766e3a3083a21488c3086f7c458ff8"
     },
     {
       "path": "app/Models/PhpVersions.php",
@@ -122,6 +122,11 @@
       "sha256": "ef20afe8cc345bb7b80a14a8d12a2b192b3e8cce94d678babc55256e79c2618c"
     },
     {
+      "path": "app/Services/NameserverSettings.php",
+      "bytes": 721,
+      "sha256": "ecdb50e7c2c1075ca0b6f19961903a8c9d85adda968a4ee2b396c805015c7684"
+    },
+    {
       "path": "app/Services/Quota.php",
       "bytes": 2708,
       "sha256": "f79c973618ab3e7053ada7c3a70a15396c818d59dda4a0d464604657abf2e0d0"
@@ -133,8 +138,8 @@
     },
     {
       "path": "app/Services/ServerService.php",
-      "bytes": 4074,
-      "sha256": "03530074884957a5225c8383807b0c19e11c2f8e816b2bf4026fcc88227c06e2"
+      "bytes": 6873,
+      "sha256": "d0a7e9e4b261e7d587537002c3c954fcbef1fa9544dcbdcd7e5a8d6d2f4490de"
     },
     {
       "path": "app/Services/Totp.php",
@@ -263,8 +268,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 5223,
-      "sha256": "4b0a198329daa9de126b38047f11669e992790a9a0bc8323a511eda6b664bb80"
+      "bytes": 5733,
+      "sha256": "702fcd522008488c12b3f3f7709aedb760f7c5046ad9db22837df2205a45c388"
     },
     {
       "path": "public/css/app.css",
@@ -273,8 +278,13 @@
     },
     {
       "path": "public/css/file-manager.css",
-      "bytes": 4330,
-      "sha256": "97a3087a6faa2700bcc89411b48b2d3dbdfabcf74cca73a54965a6e3f808782a"
+      "bytes": 9805,
+      "sha256": "98384dbb39e64785a9d6d796cc6409ad7a4f5e3307545af0c3062c5c7dd97c3a"
+    },
+    {
+      "path": "public/css/login.css",
+      "bytes": 3583,
+      "sha256": "d876d8ef9ec1d03bfb63479c4abcb33d323eb5cbea7ee5f22d076196da06acd4"
     },
     {
       "path": "public/images/logo.svg",
@@ -293,8 +303,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 37385,
-      "sha256": "debad0ef5b97b264195968a61ed270582ed6d33cd3c803fe31a321c4288e3cd3"
+      "bytes": 40764,
+      "sha256": "c50b800dd5099c399a85ea6316653a3e32ff9c778f533c02e39356b557f27d75"
     },
     {
       "path": "public/js/dashboard.js",
@@ -303,8 +313,8 @@
     },
     {
       "path": "public/js/file-manager.js",
-      "bytes": 14735,
-      "sha256": "845f8cee818341a2b864cec69b28093da068099af50c8611607af0eb71b68163"
+      "bytes": 19833,
+      "sha256": "79884604ad43d6b969f27269450cd8c5c1eb70a7dfc51ddd9c0592c3d4d150bf"
     },
     {
       "path": "public/js/forms.js",
@@ -313,8 +323,8 @@
     },
     {
       "path": "public/js/icons.js",
-      "bytes": 3427,
-      "sha256": "1302ebbb74ae817ab0de287b34569ec0e5b1efb5e9ade4b6fa250e89a31e6898"
+      "bytes": 4744,
+      "sha256": "415c664de2a7af9d50ea088163139edcd943e589d382930293947ff8355a4298"
     },
     {
       "path": "public/router.php",
@@ -323,8 +333,8 @@
     },
     {
       "path": "resources/views/app.php",
-      "bytes": 761,
-      "sha256": "56bb1b729baab7907d7d87e06be76c38395349a5c4e9d44aea167b905b291f5c"
+      "bytes": 809,
+      "sha256": "f892584f0bcab3d934404affd2b7adef6642c620ec67ea2b9e7a29692f1c6a33"
     },
     {
       "path": "scripts/console.php",
