@@ -64,7 +64,7 @@ def cron(value):
     fields = value.split(' ')
     if len(fields) != 5:
         raise Rejected('Five cron fields required')
-    for field, (low, high) in zip(fields, [(0, 59), (0, 23), (1, 31), (1, 12), (0, 6)]):
+    for field, (low, high) in zip(fields, [(0, 59), (0, 23), (1, 31), (1, 12), (0, 7)]):
         for item in field.split(','):
             match = re.fullmatch(r'(\*|\d+(?:-\d+)?)(?:/(\d+))?', item)
             if not match:

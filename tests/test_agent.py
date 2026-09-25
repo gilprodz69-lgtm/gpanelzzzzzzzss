@@ -33,7 +33,9 @@ class AgentTests(unittest.TestCase):
 
     def test_cron(self):
         self.assertEqual(cron('*/5 0-23 * * 0,6'), '*/5 0-23 * * 0,6')
-        for value in ['* * * * * root reboot', '61 * * * *', '*/0 * * * *', '* * * * 7', '* * * * $(id)', '@reboot']:
+        for value in ['* * * * 7', '30 8 * * 1', '0 0 31 * *', '0 */12 * * *']:
+            self.assertEqual(cron(value), value)
+        for value in ['* * * * * root reboot', '61 * * * *', '*/0 * * * *', '* * * * 8', '* * * * $(id)', '@reboot', '* 24 * * *', '* * 0 * *', '* * * 13 *', '30-10 * * * *', '*/61 * * * *']:
             with self.assertRaises(Rejected): cron(value)
 
     def test_bool_not_an_id(self):

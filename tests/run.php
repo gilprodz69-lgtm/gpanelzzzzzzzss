@@ -116,6 +116,30 @@ check('nameservers normalize names and reject unsafe or incomplete settings',fun
     foreach([['ns1'=>'ns1.example.com','ns2'=>''],['ns1'=>'ns1.example.com','ns2'=>'ns1.example.com'],['ns1'=>'https://ns1.example.com','ns2'=>'ns2.example.com'],['ns1'=>'192.0.2.1','ns2'=>'ns2.example.com']] as $data)denied(fn()=>\App\Services\NameserverSettings::validate($data),422);
     eq(\App\Services\NameserverSettings::validate([])['status'],'not_configured');
 });
+check('cron validates ranges before reserving jobs',function()use($db,$master,$server,$masterId){
+    $service=new ResourceService($db,$master);
+    $site=$db->one('SELECT * FROM websites WHERE owner_id=? ORDER BY id LIMIT 1',[$masterId]);
+    $db->query("UPDATE websites SET status='active' WHERE id=?",[$site['id']]);
+    $data=['server_id'=>$server,'website_id'=>(int)$site['id'],'path'=>'tasks/rotina.php'];
+    $before=$db->scalar('SELECT COUNT(*) FROM jobs');
+    foreach(['60 * * * *','* 24 * * *','* * 0 * *','* * * 13 *','* * * * 8','*/0 * * * *','*/61 * * * *','10-5 * * * *','@reboot',"* * * * *\nroot id"] as $schedule) denied(fn()=>$service->create('cron_jobs',$data+['schedule'=>$schedule]),422);
+    eq($db->scalar('SELECT COUNT(*) FROM jobs'),$before);
+    foreach(['* * * * *','*/5 * * * *','0 */12 * * *','30 8 * * 1','0 0 31 * *','0 12 * * 7'] as $schedule) {
+        $r=$service->create('cron_jobs',$data+['schedule'=>$schedule]);
+        $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$r['job_id']])),true);
+        eq($payload['schedule'],$schedule);eq($payload['path'],'tasks/rotina.php');eq($payload['website_id'],(int)$site['id']);
+        eq($db->scalar('SELECT operation FROM jobs WHERE id=?',[$r['job_id']]),'create_cron');
+    }
+    foreach(['../secret.php','/etc/test.php','tasks/test.php;id'] as $path)denied(fn()=>$service->create('cron_jobs',array_merge($data,['path'=>$path,'schedule'=>'* * * * *'])),422);
+});
+check('cron cannot target another account or a pending site',function()use($db,$resource,$server,$clientId,$resellerId){
+    $site=$db->one('SELECT * FROM websites WHERE owner_id=? ORDER BY id LIMIT 1',[$clientId]);
+    $data=['server_id'=>$server,'website_id'=>(int)$site['id'],'schedule'=>'*/5 * * * *','path'=>'index.php'];
+    denied(fn()=>$resource->create('cron_jobs',$data+['owner_id'=>$clientId]),422);
+    $db->query("UPDATE websites SET status='active' WHERE id=?",[$site['id']]);
+    denied(fn()=>$resource->create('cron_jobs',$data+['owner_id'=>$resellerId]),422);
+});
+
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

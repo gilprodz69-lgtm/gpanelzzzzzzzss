@@ -1,0 +1,50 @@
+.dashboard-page .chart-panel { grid-column: 1 / -1; }
+.dashboard-page .overview-panel { grid-row: auto; }
+.dashboard-page .status-note { margin: 0 4px 8px; }
+.dashboard-page .greeting { margin-bottom: 0; }
+.dashboard-page .stats-grid { margin-bottom: 0; }
+.dashboard-page { display: grid; gap: 12px; }
+.dashboard-page .chart-wrap { height: auto; min-height: 130px; }
+.dashboard-page .chart-wrap svg { width: 100%; height: 100%; }
+@media (min-width: 1000px) and (min-height: 650px) {
+  .dashboard-page { height: calc(100dvh - 112px); grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; }
+  .dashboard-page:has(> .status-note) { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+  .dashboard-page .greeting { min-height: 76px; padding: 12px 16px; }
+  .dashboard-page .greeting h1 { font-size: 26px; }
+  .dashboard-page .greeting p { font-size: 12px; }
+  .dashboard-page .stats-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  .dashboard-page .stat-card { min-height: 90px; padding: 12px; gap: 10px; }
+  .dashboard-page .stat-icon { width: 38px; height: 38px; flex-shrink: 0; }
+  .dashboard-page .stat-info h2 { font-size: 10px; }
+  .dashboard-page .stat-info p { font-size: 10px; }
+  .dashboard-page .stat-number strong { font-size: 25px; }
+  .dashboard-page .dashboard-grid { min-height: 0; grid-template-columns: minmax(0, 1.85fr) minmax(280px, 1fr); grid-template-rows: minmax(215px, 1fr) minmax(150px, .85fr); gap: 12px; }
+  .dashboard-page .panel { min-height: 0; padding: 10px; }
+  .dashboard-page .panel-heading { margin-bottom: 7px; }
+  .dashboard-page .resources-panel { display: flex; flex-direction: column; }
+  .dashboard-page .gauges { flex: 1; min-height: 0; gap: 8px; }
+  .dashboard-page .gauge { padding: 8px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+  .dashboard-page .gauge h3 { margin: 0; font-size: 12px; }
+  .dashboard-page .gauge-wrap { width: clamp(85px, 13vh, 130px); height: clamp(85px, 13vh, 130px); margin: 0; flex-shrink: 0; }
+  .dashboard-page .gauge-wrap strong { font-size: 20px; white-space: nowrap; }
+  .dashboard-page .gauge p { margin: 0; font-size: 10px; }
+  .dashboard-page .overview-panel { display: flex; flex-direction: column; grid-column: 2; grid-row: 1; }
+  .dashboard-page .server-list { overflow: auto; min-height: 0; }
+  .dashboard-page .server-row { padding: 12px 0; gap: 8px; }
+  .dashboard-page .server-name { min-width: 0; }
+  .dashboard-page .server-name strong, .dashboard-page .server-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dashboard-page .server-detail { font-size: 10px; }
+  .dashboard-page .chart-panel { grid-row: 2; display: flex; flex-direction: column; }
+  .dashboard-page .chart-wrap { flex: 1; min-height: 0; }
+  .dashboard-page .empty { padding: 12px; }
+}
+@media (min-width: 1000px) and (max-width: 1200px) {
+  .dashboard-page .stat-icon { display: none; }
+  .dashboard-page .server-detail { display: none; }
+  .dashboard-page .greeting-date { display: none; }
+}
+.cron-schedule [hidden] { display: none !important; }
+.cron-schedule { display: grid; gap: 14px; }
+.cron-schedule .cron-options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cron-schedule .helper { margin: 0; }
+.cron-schedule code { overflow-wrap: anywhere; }

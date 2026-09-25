@@ -1,5 +1,5 @@
 {
-  "version": "0.2.3-preview",
+  "version": "0.2.4-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "d13ca72b2904d0dd005913e1b8b839be0f4ad1961109c8b980170a2f4271f5ca"
+      "sha256": "9ef96872bbdcd0c907cc14cca6325b6764c921e58b9685d5b83735afbd14f81a"
     },
     {
       "path": "agent/files.py",
@@ -49,7 +49,7 @@
     {
       "path": "agent/validation.py",
       "bytes": 2862,
-      "sha256": "4ce028b74b4e736a188c5c77224a31c1c42c0c2863cc3ceeaf0ce84c002b6c65"
+      "sha256": "fa3bb078a9b4096c10bf6e833ea8a564247e0f7939a497df27aa818aa2546e2a"
     },
     {
       "path": "app/Controllers/ApiController.php",
@@ -133,8 +133,8 @@
     },
     {
       "path": "app/Services/ResourceService.php",
-      "bytes": 9004,
-      "sha256": "43b596a5f1d1f93d25084f5fe81ba972a759413844f62ff33d7de1c719544ee2"
+      "bytes": 8885,
+      "sha256": "e3e9c8597a5c2d326de00c133aae6043b3fe0e0907a4b812dd36104f769c63f9"
     },
     {
       "path": "app/Services/ServerService.php",
@@ -150,6 +150,11 @@
       "path": "app/Services/Worker.php",
       "bytes": 6796,
       "sha256": "7d2ecca82032a04f9c3686bbe316f4c1f1fb3707627d4d60a523217e6f328386"
+    },
+    {
+      "path": "app/Validators/CronSchedule.php",
+      "bytes": 1225,
+      "sha256": "7c962968cfab1bef0d251021a5dec1db01c7aacebad24388735629d7acff42c6"
     },
     {
       "path": "app/Validators/Input.php",
@@ -277,6 +282,11 @@
       "sha256": "4d9ee189c110d5bd02421b2c1ac18e25a2f60b161bf1f46b05f5a2bf2d6a9534"
     },
     {
+      "path": "public/css/dashboard.css",
+      "bytes": 3332,
+      "sha256": "5f74b708e6222ed9163c20043319af271767c1f61125e8d00bd8372801d3052d"
+    },
+    {
       "path": "public/css/file-editor.css",
       "bytes": 3509,
       "sha256": "def7ef8e40c9ab58f1e975295f5b2b760c465c6a241cdb0b69b1fbe7b27db9fc"
@@ -308,13 +318,18 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 40764,
-      "sha256": "c50b800dd5099c399a85ea6316653a3e32ff9c778f533c02e39356b557f27d75"
+      "bytes": 41638,
+      "sha256": "52e8fd9d6cee75f821b9808e4dffde16fbafdcdeb253bcfec38f29e93fb7414e"
+    },
+    {
+      "path": "public/js/cron-schedule.js",
+      "bytes": 3832,
+      "sha256": "1abbcf82f5507072758865775d51d601a75b82c4b114209f95ae82e8be483206"
     },
     {
       "path": "public/js/dashboard.js",
-      "bytes": 10212,
-      "sha256": "0a87b65542bb43570f6e03dc9b73bd48fb2300f53bd43243340b2fd6c8591555"
+      "bytes": 7674,
+      "sha256": "d327e25d59380ba8ad207a2cb3680479351e2c44c972e8f5eb422410aae33430"
     },
     {
       "path": "public/js/file-editor.js",
@@ -328,8 +343,8 @@
     },
     {
       "path": "public/js/forms.js",
-      "bytes": 7201,
-      "sha256": "dda5060d9099c40d825517444f2df5e7012b2b8e9ee068938ad35b1c7781157e"
+      "bytes": 7338,
+      "sha256": "e2d3340d9f6b75c2eaea721134ebbd90c8e0ec446424605a641789898d74aa43"
     },
     {
       "path": "public/js/icons.js",
@@ -448,8 +463,8 @@
     },
     {
       "path": "resources/views/app.php",
-      "bytes": 863,
-      "sha256": "a46800bfa6390f10fa16076dffb8a606f5498dc5586a0af330e6f9f84036b466"
+      "bytes": 915,
+      "sha256": "e66654f24ffa0e737985628c0fc46b376ea239fdf74004d6fff4de0ab3b3dc18"
     },
     {
       "path": "scripts/console.php",

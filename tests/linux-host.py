@@ -6,13 +6,18 @@ import socket
 import ssl
 import http.client
 import sys
+import time
+import json
+import pwd
 from unittest.mock import patch
 if os.getenv('GITHUB_ACTIONS') != 'true' or os.geteuid() != 0:
     raise SystemExit('Run only on the disposable GitHub Actions runner as root')
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'agent'))
 from operations import Operations, PHP_VERSIONS
 from runtime import run
+from validation import Rejected
 ops=Operations()
+cron_fixtures=[]
 def fetch(host, path='/'):
     context=ssl.create_default_context(cafile=f'/etc/vpsmanager/tls/{host}/fullchain.pem')
     with socket.create_connection(('127.0.0.1',443),timeout=10) as raw:
@@ -44,6 +49,17 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         ops.restore_backup({**files,'resource_id':100+index})
         assert fetch(p['domain'],'/version.php').endswith(version.encode())
         ops.delete_backup({**files,'resource_id':100+index})
+        cron={**files,'resource_id':200+index,'schedule':'* * * * *','path':'cron-check.php'}
+        try:
+            ops.create_cron(cron)
+            raise AssertionError('Cron accepted a missing script')
+        except Rejected:
+            pass
+        content=b'<?php file_put_contents(__DIR__."/cron-result.json", json_encode([PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION, posix_geteuid()]));'
+        ops.files({**files,'action':'write','path':'cron-check.php','content':base64.b64encode(content).decode()})
+        ops.create_cron(cron)
+        site=ops.find('site',files,'website_id')
+        cron_fixtures.append((p,cron,site,'8.4' if index==1 else version))
         if index==1:
             ops.create_domain({**files,'resource_id':50,'alias':'alias.example.invalid','type':'alias'})
             assert fetch('alias.example.invalid','/version.php').endswith(version.encode())
@@ -51,8 +67,31 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
             assert fetch(p['domain'],'/version.php').endswith(b'8.4')
             assert fetch('alias.example.invalid','/version.php').endswith(b'8.4')
             ops.delete_domain({**files,'resource_id':50})
-        ops.delete_site(p)
         print('PASS PHP',version,'HTTPS, files, upload, trash and backup restoration',flush=True)
+
+# Exercise the actual daemon and all PHP runtimes concurrently (at most one minute).
+run(['/usr/bin/systemctl','is-active','cron'])
+deadline=time.monotonic()+85
+while True:
+    pending=[]
+    for p,cron,site,version in cron_fixtures:
+        marker=Path(site['public'])/'cron-result.json'
+        try:
+            result=json.loads(marker.read_text())
+        except (FileNotFoundError,json.JSONDecodeError):
+            pending.append(p['domain']);continue
+        if result!=[version,pwd.getpwnam(site['username']).pw_uid]:
+            pending.append(p['domain'])
+    if not pending:break
+    assert time.monotonic()<deadline,('Cron did not execute with the correct PHP/user',pending)
+    time.sleep(2)
+for p,cron,site,version in cron_fixtures:
+    path=Path(ops.find('cron',cron)['path'])
+    assert path.stat().st_mode & 0o777==0o644
+    ops.delete_cron(cron)
+    assert not path.exists()
+    ops.delete_site(p)
+print('PASS real scheduled PHP execution, site user isolation, PHP change and cron removal',flush=True)
 
 db={'tenant_id':999,'owner_id':999,'resource_id':999,'name':'u999_integration','password':'IntegrationOnly_73622'}
 ops.create_database(db)

@@ -1,9 +1,10 @@
 import{api,esc}from'./api.js';
+import{scheduleFields,bindSchedule}from'./cron-schedule.js';
 const field=(name,label,type='text',extra='')=>`<label>${label}<input class="input" name="${name}" type="${type}" ${extra} required></label>`;
 const select=(name,label,items,selected='')=>`<label>${label}<select class="input" name="${name}" required>${items.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(selected)?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`;
 const limitsLabels={websites:'Sites',domains:'Domínios',databases:'Bancos',ssl_certificates:'Certificados SSL',ftp_accounts:'Contas SFTP',backups:'Backups',cron_jobs:'Cron jobs',docker_containers:'Containers',users:'Clientes',storage_mb:'Armazenamento (MB)',traffic_mb:'Tráfego (MB)',cpu:'CPU',ram_mb:'RAM (MB)'};
 export async function creationForm(kind,ctx){
- let fields='',note='',title='';
+ let fields='',note='',title='',cronSites=[];
  if(kind==='servers'){
   title='Adicionar Servidor';
   fields=field('name','Nome do servidor','text','placeholder="srv-br01" maxlength="190"')+field('address','IP ou hostname','text','placeholder="192.0.2.10"')+field('agent_url','Endereço HTTPS do agente','url','placeholder="https://agent.exemplo.com:9443"')+field('agent_secret','Segredo compartilhado do agente','password','minlength="32" autocomplete="new-password"')+select('os','Sistema operacional',[['Ubuntu 24.04','Ubuntu 24.04'],['Ubuntu 22.04','Ubuntu 22.04']]);
@@ -29,6 +30,7 @@ export async function creationForm(kind,ctx){
    const sites=(await api('/websites')).data.filter(s=>s.status==='active');
    if(!sites.length)throw new Error('Este recurso precisa de um site ativo. Crie um site e aguarde o agente concluir o provisionamento.');
    fields+=select('website_id','Site',sites.map(s=>[s.id,s.name]));
+   if(kind==='cron_jobs')cronSites=sites;
   }
   const schemas={
    websites:()=>field('domain','Domínio ou IP da VPS','text','placeholder="exemplo.com.br"')+select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),'8.3'),
@@ -37,14 +39,14 @@ export async function creationForm(kind,ctx){
    ssl_certificates:()=>field('email','E-mail de contato ACME','email',`value="${esc(ctx.me.user.email)}"`),
    ftp_accounts:()=>field('name','Nome do usuário SFTP','text','pattern="[a-z][a-z0-9_]{0,20}"')+field('password','Senha SFTP','password','minlength="12" maxlength="72" autocomplete="new-password"'),
    backups:()=>'<div class="full notice">Será criado um arquivo dos dados do site no servidor. Este fluxo não inclui o banco de dados.</div>',
-   cron_jobs:()=>field('schedule','Expressão cron','text','value="*/5 * * * *"')+field('path','Script PHP relativo ao site','text','placeholder="tasks/rotina.php"'),
+   cron_jobs:()=>scheduleFields()+field('path','Script PHP relativo ao site','text','placeholder="tasks/rotina.php"'),
    firewall_rules:()=>field('port','Porta','number','min="1" max="65535"')+select('protocol','Protocolo',[['tcp','TCP'],['udp','UDP']])+field('source','Origem','text','value="any"')+select('action','Ação',[['allow','Permitir'],['deny','Bloquear']]),
    docker_containers:()=>field('name','Nome do container','text','pattern="[a-z][a-z0-9_]{0,31}"')+field('image','Imagem:tag','text','placeholder="nginx:stable-alpine"')+field('memory_mb','Limite de RAM (MB)','number','value="256" min="64" max="4096"')+field('cpu','Limite de CPU','number','value="1" min="1" max="4"')
   };
   fields+=schemas[kind]?.()||'';
   note=kind==='docker_containers'?'Somente imagens autorizadas pelo operador. Containers são criados sem acesso à rede, sem volumes do host e sem privilégios.':kind==='ssl_certificates'?'O DNS precisa apontar para o servidor e a porta 80 deve estar acessível para a validação Let’s Encrypt.':'A operação será executada pelo agente. Acompanhe o resultado em Operações.';
  }
- return{title,html:`${note?`<div class="notice">${esc(note)}</div>`:''}<div class="form-grid">${fields}</div>`,serialize(form){
+ return{title,bind:kind==='cron_jobs'?form=>bindSchedule(form,cronSites):undefined,html:`${note?`<div class="notice">${esc(note)}</div>`:''}<div class="form-grid">${fields}</div>`,serialize(form){
   const values=Object.fromEntries(new FormData(form));
   for(const key of ['server_id','owner_id','website_id','plan_id','port','memory_mb','cpu','price_cents'])if(values[key]!==undefined)values[key]=Number(values[key]);
   if(kind==='plans'){values.limits={};for(const key of Object.keys(limitsLabels)){values.limits[key]=Number(values[`limit_${key}`]);delete values[`limit_${key}`];}values.features=[];for(const key of Object.keys(values))if(key.startsWith('feature_')){values.features.push(key.slice(8));delete values[key];}}
