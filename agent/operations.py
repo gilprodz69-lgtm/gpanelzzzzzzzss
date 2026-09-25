@@ -8,7 +8,7 @@ import tarfile
 import time
 from pathlib import Path
 from validation import integer, domain, identifier, choice, password, inside, cron, source, Rejected
-from runtime import run, atomic_write, unprivileged, wait_socket
+from runtime import run, atomic_write, unprivileged, wait_socket, reload_nginx
 import files
 import tls
 PHP_VERSIONS = ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
@@ -168,7 +168,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             raise
         run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
         wait_socket(socket)
-        run(['/usr/bin/systemctl', 'reload', 'nginx'])
+        reload_nginx()
         self.save('site', p, {'domain': host, 'home': str(home), 'public': str(public), 'username': username, 'php': version, 'nginx': str(nginx), 'pool': str(pool)})
         result = {'domain': host, 'path': str(public), 'https': True, 'trusted': False}
         try:
@@ -181,7 +181,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         s = self.find('site', p)
         # Preserve web files for recovery; delete only agent-owned service configuration.
         Path(s['nginx']).unlink(missing_ok=True); Path(s['pool']).unlink(missing_ok=True)
-        run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+        run(['/usr/sbin/nginx', '-t']); reload_nginx()
         run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
         run(['/usr/sbin/usermod', '--lock', s['username']])
         self.forget('site', p)
@@ -207,7 +207,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         content = tls.secure_config(content, host, cert, key)
         atomic_write(path, content)
         try:
-            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+            run(['/usr/sbin/nginx', '-t']); reload_nginx()
         except Exception:
             path.unlink(missing_ok=True); raise
         self.save('domain', p, {'domain': host, 'path': str(path)})
@@ -220,7 +220,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
 
     def delete_domain(self, p):
         d = self.find('domain', p); Path(d['path']).unlink(missing_ok=True)
-        run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx']); self.forget('domain', p)
+        run(['/usr/sbin/nginx', '-t']); reload_nginx(); self.forget('domain', p)
         return {'message': 'Domain removed'}
 
     def create_database(self, p):
@@ -274,7 +274,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             wait_socket(new_socket)
             for config, text in configs.items():
                 atomic_write(config, text.replace(f'fastcgi_pass unix:{old_socket};', f'fastcgi_pass unix:{new_socket};'))
-            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+            run(['/usr/sbin/nginx', '-t']); reload_nginx()
             old_pool.unlink()
             run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
         except Exception:
@@ -284,7 +284,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
                 atomic_write(config, text)
             run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
             run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
-            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+            run(['/usr/sbin/nginx', '-t']); reload_nginx()
             raise
         # Keep existing cron commands in sync with this site's PHP runtime.
         for row in self.catalog.execute("SELECT data FROM resources WHERE tenant=? AND kind='cron'", (p['tenant_id'],)).fetchall():
@@ -306,7 +306,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         if 'listen 443' not in config.read_text():
             cert, key = tls.local_certificate(s['domain'])
             atomic_write(config, tls.secure_config(config.read_text(), s['domain'], cert, key))
-            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+            run(['/usr/sbin/nginx', '-t']); reload_nginx()
         tls.upgrade_certificate(config, s['domain'], email)
         self.save('ssl', p, {'domain': s['domain']}); return {'domain': s['domain']}
 
@@ -319,7 +319,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         content = re.sub(r'ssl_certificate_key\s+[^;]+;', f'ssl_certificate_key {key};', content)
         atomic_write(config, content)
         try:
-            run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])
+            run(['/usr/sbin/nginx', '-t']); reload_nginx()
         except Exception:
             atomic_write(config, before)
             raise

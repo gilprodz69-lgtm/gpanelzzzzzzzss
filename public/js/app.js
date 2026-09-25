@@ -136,4 +136,11 @@ modal.addEventListener('click',e=>{if(e.target===modal){const rect=modal.getBoun
 try{document.documentElement.dataset.theme=localStorage.getItem('vpm-theme')==='dark'?'dark':'light';}catch{}
 const reset=new URLSearchParams(location.search).get('reset');
 if(reset)login(reset);else{try{await refreshMe();shell();await navigate();}catch(e){if(e.status===401)login();else{root.innerHTML=`<div class="boot"><h1>VPS Manager</h1><p>${esc(e.message)}</p><p>Verifique a configuração do banco e execute as migrations.</p></div>`;}}}
-setInterval(async()=>{if(!me||document.hidden||modal.open)return;try{const r=await api('/notifications');const marker=document.querySelector('#notification-marker');if(marker)marker.className=r.data.some(n=>!n.read_at)?'notification-dot':'';if(current==='dashboard'){const html=await renderDashboard(ctx);if(current==='dashboard'&&!modal.open){document.querySelector('#content').innerHTML=html;applyWidths();}}}catch{}},10000);
+setInterval(async()=>{if(!me||document.hidden||modal.open)return;try{const r=await api('/notifications');const marker=document.querySelector('#notification-marker');if(marker)marker.className=r.data.some(n=>!n.read_at)?'notification-dot':'';if(current==='dashboard'){const html=await renderDashboard(ctx);if(current==='dashboard'&&!modal.open){document.querySelector('#content').innerHTML=html;applyWidths();}}
+else if(current==='jobs'||document.querySelector('.data-table .badge.pending,.data-table .badge.running,.data-table .badge.deleting')){
+ const route=current,term=document.querySelector('#table-search')?.value||'';
+ if(document.activeElement?.matches('input,select,textarea'))return;
+ const html=await listPage(route);
+ if(current===route&&!modal.open&&!document.activeElement?.matches('input,select,textarea')){document.querySelector('#content').innerHTML=html;bindPage();const search=document.querySelector('#table-search');if(search){search.value=term;search.dispatchEvent(new Event('input'));}}
+}
+}catch{}},10000);

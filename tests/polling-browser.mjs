@@ -1,0 +1,14 @@
+import {chromium} from 'playwright';
+import {readFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({headless:true}),page=await browser.newPage();
+await page.clock.install();
+const password=(await readFile('storage/LOCAL-ACCESS.txt','utf8')).match(/Senha: (.+)/)[1].trim();
+await page.goto('http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
+let completed=false;
+await page.route('**/api/v1/databases',route=>route.fulfill({json:{data:[{id:800,name:'u1_example',owner_id:1,server_id:1,status:completed?'active':'pending',created_at:Math.floor(Date.now()/1000)}]}}));
+await page.route('**/api/v1/databases/800/access',route=>route.fulfill({json:{name:'u1_example',username:'u1_example',host:'localhost',port:3306,phpmyadmin_url:'https://example.test:8443/phpmyadmin/'}}));
+await page.locator('[data-route=databases]').click();await page.getByText('Pendente',{exact:true}).waitFor();completed=true;
+await page.clock.fastForward(11000);await page.getByText('Ativo',{exact:true}).waitFor();
+await page.getByRole('button',{name:'Gerenciar',exact:true}).click();await page.getByRole('link',{name:'Abrir phpMyAdmin'}).waitFor();assert.equal(await page.getByRole('link',{name:'Abrir phpMyAdmin'}).getAttribute('href'),'https://example.test:8443/phpmyadmin/');
+await browser.close();console.log('PASS completed jobs update resource status without reload and database management exposes phpMyAdmin');

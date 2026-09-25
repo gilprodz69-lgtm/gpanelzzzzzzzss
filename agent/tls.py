@@ -1,7 +1,7 @@
 """HTTPS defaults shared by site provisioning and panel installation."""
 import ipaddress
 from pathlib import Path
-from runtime import run, atomic_write
+from runtime import run, atomic_write, reload_nginx
 from validation import domain, Rejected
 
 ACME = '/opt/vpsmanager/acme/bin/certbot'
@@ -59,7 +59,7 @@ def upgrade_certificate(path, name, email):
     atomic_write(path, content)
     try:
         run(['/usr/sbin/nginx', '-t'])
-        run(['/usr/bin/systemctl', 'reload', 'nginx'])
+        reload_nginx()
     except Exception:
         atomic_write(path, before)
         raise

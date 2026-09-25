@@ -28,13 +28,13 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 25404,
-      "sha256": "c21453f248049dcd4785e716e3e8c4a3c7dab48d5f6e54506c558a4754549fad"
+      "bytes": 25162,
+      "sha256": "63f71b5edadda85578046ec6390b3cb6ae61dbdd216f042670f6d27fa470475b"
     },
     {
       "path": "agent/runtime.py",
-      "bytes": 2597,
-      "sha256": "4224b9220c0c26b5762867816fc0cde1f666a085fba1bf1601994a29c0a34df2"
+      "bytes": 3620,
+      "sha256": "be04e442f74aa5acbc898355851264cd0f0cdbf98b1860fe42f47e802f7d065d"
     },
     {
       "path": "agent/server.py",
@@ -43,8 +43,8 @@
     },
     {
       "path": "agent/tls.py",
-      "bytes": 2798,
-      "sha256": "afe6d323dc4ddff56de54a3c35429da110cb41c79da9f9840c045089f931dd7e"
+      "bytes": 2780,
+      "sha256": "455c719344bc17d736e66be2939d22f57921ae34cb5991d0f9a525a9cc00dd58"
     },
     {
       "path": "agent/validation.py",
@@ -293,8 +293,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 36784,
-      "sha256": "33d6c98a4075d359aef433e1bdb04e8e702be6987abb3a6dc9c5d59c7d0bd0ea"
+      "bytes": 37385,
+      "sha256": "debad0ef5b97b264195968a61ed270582ed6d33cd3c803fe31a321c4288e3cd3"
     },
     {
       "path": "public/js/dashboard.js",
