@@ -227,6 +227,9 @@ check('site editing reserves the new hostname without changing the live identity
     denied(fn()=>$resources->create('websites',['server_id'=>$server,'domain'=>'edited.example.com']),409);
     $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$edit['job_id']])),true);
     eq($payload['previous_domain'],'editable.example.com');eq($payload['php_version'],'8.4');
+    $db->query("UPDATE jobs SET status='failed' WHERE id=?",[$edit['job_id']]);
+    $db->query("UPDATE websites SET status='failed' WHERE id=?",[$id]);
+    $retry=$service->update($id,['domain'=>'edited.example.com','php_version'=>'8.4']);eq($retry['job_id']>$edit['job_id'],true);
     \App\Services\WebsiteService::complete($db,$payload,['trusted'=>false]);
     $row=$resources->present($resources->find('websites',$id));eq($row['name'],'edited.example.com');eq($row['config']['php_version'],'8.4');eq(isset($row['config']['pending_update']),false);
 });

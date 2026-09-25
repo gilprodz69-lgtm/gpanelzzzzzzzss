@@ -72,7 +72,7 @@ async function listPage(kind){
   const actions=columns.find(([label])=>label==='Ações'),original=actions[1];
   actions[1]=r=>`<div class="account-actions"><button class="button small subtle" data-site-details="${r.id}">Detalhes</button>${r.status==='active'?`<a class="button small subtle" href="https://${esc(r.name)}/" target="_blank" rel="noopener">Abrir site</a>${can('files.manage')?`<a class="button small subtle" href="#/files?site=${r.id}">${icon('files')}Gerenciar arquivos</a>`:''}`:''}${original(r)}</div>`;
   const siteActions=actions[1];
-  actions[1]=r=>`${r.status==='active'&&can('websites.edit')?`<button class="button small subtle" data-edit-site="${r.id}">${icon('edit')}Editar site</button>`:''}${siteActions(r)}`;
+  actions[1]=r=>`${(r.status==='active'||r.status==='failed'&&r.config.pending_update)&&can('websites.edit')?`<button class="button small subtle" data-edit-site="${r.id}">${icon('edit')}Editar site</button>`:''}${siteActions(r)}`;
  }
  if(kind==='databases')columns.splice(1,0,['Usuário',r=>esc(r.config.username||r.name)]);
  if(me.user.role==='CLIENT')columns=columns.filter(([label])=>label!=='Servidor');

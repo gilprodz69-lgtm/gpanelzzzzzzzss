@@ -153,8 +153,8 @@
     },
     {
       "path": "app/Services/WebsiteService.php",
-      "bytes": 5475,
-      "sha256": "f22114fa3ccc5658105e9cb8787d5b67747ff57ad0dd66366cf824bf71926086"
+      "bytes": 5568,
+      "sha256": "d517baa973caec447e82b60545b7fb8015a119ab32d5038519d2a5b2c5ad964e"
     },
     {
       "path": "app/Services/Worker.php",
@@ -338,8 +338,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 46450,
-      "sha256": "aaf59b52ec7944e8ca845a8356234786cdbd7a8ad1b47aac323cb525cf340e61"
+      "bytes": 46498,
+      "sha256": "f95525449af09384cc17c2288cacf81d334058b64216c5db95ed82945520ce8e"
     },
     {
       "path": "public/js/cron-schedule.js",

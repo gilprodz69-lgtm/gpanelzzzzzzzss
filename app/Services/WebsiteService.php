@@ -25,10 +25,10 @@ final class WebsiteService
         return $this->db->transaction(function()use($id,$data){
             $this->db->lockTenant((int)$this->policy->user['tenant_id']);
             $r=(new ResourceService($this->db,$this->policy))->find('websites',$id);
-            if($r['status']!=='active') throw new HttpError(409,'Aguarde a operação atual do site. Consulte Operações se houve uma falha.');
+            $config=json_decode($r['config_json'],true);
+            if($r['status']!=='active' && !($r['status']==='failed' && isset($config['pending_update']))) throw new HttpError(409,'Aguarde a operação atual do site. Consulte Operações se houve uma falha.');
             $owner=$this->policy->owner((int)$r['owner_id']);
             $server=$this->policy->server((int)$r['server_id'],(int)$r['owner_id']);
-            $config=json_decode($r['config_json'],true);
             $host=$data['domain']??$r['name'];
             if(filter_var($host,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)) {
                 if($host!==$r['name'] && (!$this->policy->isAdmin() || $host!==$server['address'])) throw new HttpError(422,'Somente a administração pode usar o IP deste servidor como endereço do site.');
@@ -36,7 +36,7 @@ final class WebsiteService
             if(strlen($host)>190) throw new HttpError(422,'Domínio muito longo (máximo de 190 caracteres).');
             $version=Input::choice($data['php_version']??$config['php_version'],PhpVersions::ALL,'PHP');
             self::available($this->db,(int)$r['server_id'],$host,$id);
-            if($host===$r['name'] && $version===$config['php_version']) return ['message'=>'Nenhuma alteração necessária.'];
+            if($r['status']==='active' && $host===$r['name'] && $version===$config['php_version']) return ['message'=>'Nenhuma alteração necessária.'];
             foreach($this->db->all("SELECT resource_type,resource_id FROM jobs WHERE tenant_id=? AND server_id=? AND status IN ('pending','running')",[$r['tenant_id'],$r['server_id']]) as $job) {
                 // Related provisioning must finish before changing the site's configuration.
                 if(!in_array($job['resource_type'],['domains','ssl_certificates','cron_jobs','ftp_accounts','backups'],true)) continue;
