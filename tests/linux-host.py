@@ -57,7 +57,7 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
 db={'tenant_id':999,'owner_id':999,'resource_id':999,'name':'u999_integration','password':'IntegrationOnly_73622'}
 ops.create_database(db)
 sql="SHOW GRANTS FOR 'u999_integration'@'localhost';"
-grants=run(['/usr/bin/mariadb','--protocol=socket','--batch'],input_text=sql)
+grants=run(['/usr/bin/mariadb','--protocol=socket','--batch','--raw'],input_text=sql)
 assert 'u999\\_integration' in grants,grants
 ops.database_password({**db,'password':'AnotherTestOnly_66373'})
 ops.delete_database(db)
