@@ -8,7 +8,7 @@ import tarfile
 import time
 from pathlib import Path
 from validation import integer, domain, identifier, choice, password, inside, cron, source, Rejected
-from runtime import run, atomic_write, unprivileged
+from runtime import run, atomic_write, unprivileged, wait_socket
 import files
 import tls
 PHP_VERSIONS = ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
@@ -167,6 +167,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             pool.unlink(missing_ok=True); nginx.unlink(missing_ok=True)
             raise
         run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
+        wait_socket(socket)
         run(['/usr/bin/systemctl', 'reload', 'nginx'])
         self.save('site', p, {'domain': host, 'home': str(home), 'public': str(public), 'username': username, 'php': version, 'nginx': str(nginx), 'pool': str(pool)})
         result = {'domain': host, 'path': str(public), 'https': True, 'trusted': False}
@@ -270,6 +271,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         try:
             run([f'/usr/sbin/php-fpm{version}', '-t'])
             run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
+            wait_socket(new_socket)
             for config, text in configs.items():
                 atomic_write(config, text.replace(f'fastcgi_pass unix:{old_socket};', f'fastcgi_pass unix:{new_socket};'))
             run(['/usr/sbin/nginx', '-t']); run(['/usr/bin/systemctl', 'reload', 'nginx'])

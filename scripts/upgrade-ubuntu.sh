@@ -10,6 +10,8 @@ flock -n 9 || { echo 'Uma atualização já está em execução.' >&2; exit 1; }
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 old_release=$(readlink -f /opt/vpsmanager/current)
 [[ "$old_release" == /opt/vpsmanager/releases/* && -d "$old_release" && -f /opt/vpsmanager/shared/.env ]] || { echo 'Instalação existente inválida.' >&2; exit 1; }
+[[ ! -f /opt/vpsmanager/shared/storage/maintenance ]] || { echo 'Há uma manutenção anterior pendente. Confira o log e o backup antes de atualizar novamente.' >&2; exit 1; }
+[[ $(df -Pk /opt/vpsmanager | awk 'NR==2 {print $4}') -ge 2000000 ]] || { echo 'Libere pelo menos 2 GB antes de atualizar.' >&2; exit 1; }
 stamp=$(date -u +%Y%m%d%H%M%S)
 backup_dir="/var/backups/vpsmanager/$stamp"
 release_dir="/opt/vpsmanager/releases/$stamp"
@@ -25,7 +27,15 @@ cp -a /etc/nginx/conf.d/vpsmanager-panel.conf "$backup_dir/panel.conf"
 cp -a /etc/vpsmanager "$backup_dir/configuration"
 printf '%s\n' "$old_release" > "$backup_dir/previous-release"
 stage='dependências'
-trap 'echo "Atualização interrompida em: $stage. Backup: $backup_dir. Consulte /var/log/vpsmanager/update.log antes de repetir." >&2' ERR
+migration_started=0
+recover() {
+    if [[ $migration_started == 0 ]]; then
+        rm -f -- /opt/vpsmanager/shared/storage/maintenance
+        systemctl start vpsmanager-agent vpsmanager-worker vpsmanager-metrics.timer || true
+    fi
+    echo "Atualização interrompida em: $stage. Backup: $backup_dir. Consulte /var/log/vpsmanager/update.log antes de repetir." >&2
+}
+trap recover ERR
 bash "$project_dir/scripts/install-runtime.sh"
 stage='nova versão'
 install -d -m 0755 "$release_dir"
@@ -38,9 +48,14 @@ find "$release_dir/app" "$release_dir/public" "$release_dir/database" -name '*.p
 stage='migração'
 touch /opt/vpsmanager/shared/storage/maintenance
 chmod 0644 /opt/vpsmanager/shared/storage/maintenance
-systemctl stop vpsmanager-metrics.timer vpsmanager-metrics.service vpsmanager-worker vpsmanager-agent
+systemctl stop vpsmanager-metrics.timer vpsmanager-metrics.service
+stage='aguardando operações em andamento'
+runuser -u vpsmanager -- php8.3 "$release_dir/scripts/console.php" queue:wait
+systemctl stop vpsmanager-worker vpsmanager-agent
 # Final consistent snapshot after stopping mutations.
 mariadb-dump --protocol=socket --single-transaction --routines --events vpsmanager > "$backup_dir/database.sql"
+stage='migração'
+migration_started=1
 php8.3 "$release_dir/scripts/console.php" migrate
 stage='configuração'
 if ! grep -q 'include /etc/nginx/snippets/vpm-phpmyadmin.conf;' /etc/nginx/conf.d/vpsmanager-panel.conf; then
@@ -51,12 +66,21 @@ install -d -m 0755 /var/lib/letsencrypt /var/lib/vpsmanager-acme
 install -m 0644 "$release_dir"/deploy/vpsmanager-*.service "$release_dir"/deploy/vpsmanager-*.timer /etc/systemd/system/
 php8.3 "$release_dir/scripts/upgrade-config.php" > "$backup_dir/https.json"
 python3 - "$backup_dir/https.json" /etc/vpsmanager/agent.env <<'PY'
-import json,sys,pathlib
+import json,sys,pathlib,ipaddress,re
 data=json.loads(pathlib.Path(sys.argv[1]).read_text())
 path=pathlib.Path(sys.argv[2]); lines=path.read_text().splitlines() if path.exists() else []
 lines=[line for line in lines if not line.startswith('VPM_ACME_EMAIL=')]
 lines.append('VPM_ACME_EMAIL='+data['email'])
 path.write_text('\n'.join(lines)+'\n');path.chmod(0o600)
+try: ipaddress.IPv4Address(data['host'])
+except ValueError: pass
+else:
+    panel=pathlib.Path('/etc/nginx/conf.d/vpsmanager-panel.conf')
+    content=panel.read_text()
+    content=re.sub(r'(listen 80;\s*server_name )'+re.escape(data['host'])+r';',r'\g<1>_;',content)
+    panel.write_text(content)
+    default=pathlib.Path('/etc/nginx/sites-enabled/default')
+    if default.is_symlink() and default.resolve()==pathlib.Path('/etc/nginx/sites-available/default'): default.unlink()
 PY
 nginx -t
 stage='ativação'

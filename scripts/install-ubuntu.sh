@@ -123,6 +123,11 @@ php_admin_value[error_log] = /opt/vpsmanager/shared/storage/logs/php.log
 php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,popen,pcntl_exec
 POOL
 ln -s "$release_dir" /opt/vpsmanager/current
+http_host=$PANEL_HOST
+if [[ $is_domain -eq 0 ]]; then
+    http_host=_
+    if [[ $(readlink -f /etc/nginx/sites-enabled/default 2>/dev/null) == /etc/nginx/sites-available/default ]]; then rm -- /etc/nginx/sites-enabled/default; fi
+fi
 cat > /etc/nginx/conf.d/vpsmanager-panel.conf <<EOF
 server {
     listen $PANEL_PORT ssl;
@@ -146,7 +151,7 @@ server {
 }
 server {
     listen 80;
-    server_name $PANEL_HOST;
+    server_name $http_host;
     location /.well-known/acme-challenge/ { root /var/lib/vpsmanager-acme; }
     location / { return 301 https://$PANEL_HOST:$PANEL_PORT\$request_uri; }
 }

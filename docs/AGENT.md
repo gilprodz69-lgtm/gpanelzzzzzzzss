@@ -17,7 +17,7 @@ Janela de relógio: 60 segundos; nonce de uso único. O agente mantém o digest 
 ## Operações disponíveis em código
 
 - `metrics`, `services`, `service_action`.
-- `create_site`, `delete_site`: Nginx e pools PHP 8.3/8.4, usuário Unix por site.
+- `create_site`, `delete_site`, `change_php`: Nginx com HTTPS, PHP 7.4 a 8.4, usuário Unix por site e troca de runtime com socket independente.
 - `create_domain`, `delete_domain`: alias, redirecionamento e domínio estacionado.
 - `create_database`, `delete_database`: banco e usuário MariaDB local.
 - `create_ssl`: Certbot/Let's Encrypt com redirecionamento HTTPS.

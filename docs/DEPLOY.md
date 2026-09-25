@@ -32,7 +32,19 @@ Publique código e artefatos na branch `main`. Só divulgue o comando quando a U
 - Banco do painel: MariaDB `vpsmanager`.
 - Serviços: nginx, php8.3-fpm, mariadb, vpsmanager-agent, vpsmanager-worker e vpsmanager-metrics.timer.
 
-O timer coleta métricas e processa agendas de backup a cada minuto. O worker processa a fila continuamente. Falha de job gera notificação com estado explícito.
+O timer coleta métricas e processa agendas de backup a cada 10 segundos após a coleta anterior. O worker processa a fila continuamente. Falha de job gera notificação com estado explícito.
+
+## Atualizar pelo mesmo comando
+
+O `install.sh` detecta `/opt/vpsmanager/current` e oferece **1 — Atualizar Painel**. Para automação, use `VPM_UPDATE=1 bash install.sh` com o instalador já baixado.
+
+A atualização cria backup do banco do painel, `.env` e configuração; prepara uma nova release; ativa manutenção; aguarda a fila concluir; executa migrations e troca o symlink `current`. Sites e bancos dos clientes ficam fora da pasta de código e são preservados. Arquivos antigos deixam de integrar a versão ativa. Releases anteriores e backups permanecem disponíveis para recuperação.
+
+Logs: `/var/log/vpsmanager/update.log`. Se uma migration falhar, o painel permanece em manutenção para evitar usar código incompatível com o banco. Não repita a atualização antes de verificar o erro.
+
+PHP 7.4, 8.0, 8.1, 8.2, 8.3 e 8.4 e extensões comuns são instalados pelo PPA Ondřej. O painel usa sempre PHP 8.3. O phpMyAdmin fica em `/phpmyadmin/`, por HTTPS, com login próprio do banco, sem login root ou servidor arbitrário.
+
+O Certbot isolado (5.4 ou superior) solicita certificados de domínio ou IPv4 público. Certificados IP usam o perfil `shortlived`; o timer `vpsmanager-certificates.timer` verifica renovação a cada seis horas. A porta 80 precisa estar acessível. Falha ACME mantém HTTPS com certificado local e aviso explícito. A emissão pública não pode ser garantida sem validar rede e DNS.
 
 ## Atualização assinada
 

@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import socket
+import time
 
 
 def run(argv, input_text=None, timeout=60, user=None):
@@ -31,6 +33,20 @@ def atomic_write(path, content, mode=0o640):
     finally:
         if os.path.exists(name):
             os.unlink(name)
+
+
+def wait_socket(path, timeout=10):
+    """systemctl reload returns before FPM has bound newly added pools."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                client.settimeout(0.25)
+                client.connect(path)
+                return
+        except OSError:
+            time.sleep(0.1)
+    raise RuntimeError('PHP-FPM pool did not become ready. Inspect the PHP-FPM journal.')
 
 
 def unprivileged(user, function):

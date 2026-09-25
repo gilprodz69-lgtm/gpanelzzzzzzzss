@@ -23,18 +23,18 @@
     },
     {
       "path": "agent/files.py",
-      "bytes": 11224,
-      "sha256": "cdc4af7da0c5f95e06a11ac70ed15e1100f20f7a367b103eff44787c85f90999"
+      "bytes": 11282,
+      "sha256": "be3ec6111a37f1137812cbe87d52f15c8ed17652547c1e07a44eec03609c2072"
     },
     {
       "path": "agent/operations.py",
-      "bytes": 25327,
-      "sha256": "0dc6b61c2cc98e5c2a59872ea8067d10139dcb2d878f1dbb6812c5f5d25e1ea5"
+      "bytes": 25404,
+      "sha256": "c21453f248049dcd4785e716e3e8c4a3c7dab48d5f6e54506c558a4754549fad"
     },
     {
       "path": "agent/runtime.py",
-      "bytes": 2045,
-      "sha256": "d7668370b159209ad5bfe0530135198b496d6ec8ac1c21bbce8a5bfc36fb14ee"
+      "bytes": 2597,
+      "sha256": "4224b9220c0c26b5762867816fc0cde1f666a085fba1bf1601994a29c0a34df2"
     },
     {
       "path": "agent/server.py",
@@ -73,8 +73,8 @@
     },
     {
       "path": "app/Models/Catalog.php",
-      "bytes": 2404,
-      "sha256": "17c1ac1157c07dbcc0f7c7a172ab2926e3ba8fdbb30f0f4e4758ca69aea30643"
+      "bytes": 2437,
+      "sha256": "e93982a73969654c02818bf8d0ab2631896ae5e2b6f59e85db9b5ddce79805c1"
     },
     {
       "path": "app/Models/PhpVersions.php",
@@ -228,8 +228,8 @@
     },
     {
       "path": "docs/AGENT.md",
-      "bytes": 3280,
-      "sha256": "68fffd88a34edae2f3564a083446a0ab8db08703b3bd2ecf5b596240468e5a6a"
+      "bytes": 3342,
+      "sha256": "a6fdbda97eea40e6a61d616ba14ee211b94e342a214a81f70f0dc02165d53834"
     },
     {
       "path": "docs/API.md",
@@ -248,8 +248,8 @@
     },
     {
       "path": "docs/DEPLOY.md",
-      "bytes": 3496,
-      "sha256": "10b240c0f5c79df2fde7fa7742a15882618413af6ae0943594b155bf91ad8889"
+      "bytes": 4956,
+      "sha256": "c0c1f75340791f871ea39c3b20d66005711d31690e8d694d39f10d94b61290bc"
     },
     {
       "path": "docs/INSTALL.md",
@@ -273,8 +273,8 @@
     },
     {
       "path": "public/css/file-manager.css",
-      "bytes": 4044,
-      "sha256": "98313ca8a1befd2a934d6826da26711a852d3c24dd174fc87964461c9af9e9d5"
+      "bytes": 4330,
+      "sha256": "97a3087a6faa2700bcc89411b48b2d3dbdfabcf74cca73a54965a6e3f808782a"
     },
     {
       "path": "public/images/logo.svg",
@@ -328,13 +328,13 @@
     },
     {
       "path": "scripts/console.php",
-      "bytes": 2801,
-      "sha256": "c5cd3c8e5b367e59d42778ceed055368889337687eb8a42d1742a1b7079b13d2"
+      "bytes": 3222,
+      "sha256": "79a91d14c0a4ab7efc4d8c61daf99ba27e418deb539111cc25a432ab578be7d5"
     },
     {
       "path": "scripts/health.php",
-      "bytes": 853,
-      "sha256": "85ce40a46889dd1852050ac5e7fce1789bafd072708f7bde9b14944c0eb507ad"
+      "bytes": 903,
+      "sha256": "75a88987ddcf1c2d0d7e00f0d98b3c506bd332fd51ef0b9e82b388feb29576b8"
     },
     {
       "path": "scripts/install-runtime.sh",
@@ -343,8 +343,8 @@
     },
     {
       "path": "scripts/install-ubuntu.sh",
-      "bytes": 10612,
-      "sha256": "353e0362a79909092b7722f7ceecb2707e92dfdaa417dfe044ef3c7690e3eb39"
+      "bytes": 10844,
+      "sha256": "29b7532ec252eae6a247fb04b68e4e3a635b5cdc339ee87a8034c6a73a9e1eec"
     },
     {
       "path": "scripts/panel-certificate.py",
@@ -368,8 +368,8 @@
     },
     {
       "path": "scripts/upgrade-ubuntu.sh",
-      "bytes": 4921,
-      "sha256": "274233099933269dcf632241f986be320e6f52291f5c4966890ed25e2adbdf9a"
+      "bytes": 6148,
+      "sha256": "358fd39e7409873070f89a9a069f3c3fc394ceddb151d59d765287374457d56d"
     },
     {
       "path": "scripts/wait-agent.py",

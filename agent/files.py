@@ -44,6 +44,8 @@ def operate(root, payload, private=None):
                 item = json.loads(metadata.read_text())
                 if (directory / metadata.stem).exists():
                     rows.append(dict(item, id=metadata.stem))
+                    if len(rows) >= 1000:
+                        break
             return {'data': sorted(rows, key=lambda item: item['deleted_at'], reverse=True)}
         if action == 'trash':
             path = inside(root, payload.get('path', ''))
@@ -134,14 +136,14 @@ def operate(root, payload, private=None):
         target = inside(root, payload.get('target', ''))
         if target.exists() or (path.is_dir() and target.is_relative_to(path)):
             raise Rejected('Invalid archive destination')
-        candidates = list(path.rglob('*')) if path.is_dir() else [path]
+        candidates = bounded_tree(path)
         if len(candidates) > 5000 or sum(p.lstat().st_size for p in candidates) > MAX_ARCHIVE:
             raise Rejected('Archive exceeds interactive limit')
         with zipfile.ZipFile(target, 'x', zipfile.ZIP_DEFLATED) as archive:
             for entry in candidates:
                 if entry.is_symlink():
                     raise Rejected('Symbolic links cannot be archived')
-                if entry.is_file():
+                if entry.is_file() or entry.is_dir():
                     archive.write(entry, str(entry.relative_to(path.parent)))
     elif action == 'unzip':
         target = inside(root, payload.get('target', ''))

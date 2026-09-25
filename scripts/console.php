@@ -25,6 +25,14 @@ try {
         echo "Organização, plano e administrador criados.\n";
     }
     elseif($command==='worker') { $w=new Worker($db); $once=in_array('--once',$argv,true); do { $worked=$w->runOne(); if(!$once&&!$worked) sleep(2); } while(!$once); }
+    elseif($command==='queue:wait') {
+        $deadline=time()+300;
+        while($db->scalar("SELECT COUNT(*) FROM jobs WHERE status IN ('pending','running')")) {
+            if(time()>=$deadline) throw new RuntimeException('Ainda existem operações pendentes/em execução. Verifique a fila antes de atualizar.');
+            sleep(1);
+        }
+        echo "Fila concluída; atualização pode prosseguir.\n";
+    }
     elseif($command==='metrics') { (new Worker($db))->collect(); (new BackupScheduler($db))->tick(); echo "Coleta e agendamentos concluídos.\n"; }
     elseif($command==='password:reset-link') {
         $u=$db->one('SELECT * FROM users WHERE email=?',[Input::email($argv[2]??'')]); if(!$u) throw new RuntimeException('Conta não encontrada.');

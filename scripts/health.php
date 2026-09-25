@@ -6,7 +6,7 @@ use App\Repositories\Database;
 use App\Services\AgentClient;
 try {
     $db=new Database();
-    if((int)$db->scalar('SELECT COUNT(*) FROM migrations')<2) throw new RuntimeException('Migrations incompletas.');
+    if((int)$db->scalar('SELECT COUNT(*) FROM migrations')<count(glob(BASE_PATH.'/database/migrations/*.php'))) throw new RuntimeException('Migrations incompletas.');
     $server=$db->one('SELECT * FROM servers ORDER BY id LIMIT 1');
     if(!$server) throw new RuntimeException('Servidor local não cadastrado.');
     $metrics=(new AgentClient($db))->call($server,'metrics',[],bin2hex(random_bytes(16)));

@@ -37,6 +37,7 @@ jobs:
         run: |
           python3 tests/test_agent.py
           python3 tests/test_files.py
+          python3 tests/test_tls.py
       - name: Installer syntax and payload
         run: |
           for script in install.sh scripts/*.sh; do bash -n "$script"; done
@@ -53,4 +54,5 @@ jobs:
       - name: Service diagnostics on failure
         if: failure()
         run: |
-          sudo journalctl -u nginx -u php8.3-fpm -u vpsmanager-agent -u vpsmanager-worker -u vpsmanager-metrics.service --no-pager -n 100
+          sudo journalctl -u nginx -u php7.4-fpm -u php8.0-fpm -u php8.1-fpm -u php8.2-fpm -u php8.3-fpm -u php8.4-fpm -u vpsmanager-agent -u vpsmanager-worker -u vpsmanager-metrics.service --no-pager -n 150
+          sudo tail -n 30 /var/log/nginx/vpm-*.error.log /var/log/php*-fpm.log 2>/dev/null || true
