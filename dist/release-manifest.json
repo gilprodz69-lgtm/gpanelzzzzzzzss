@@ -1,5 +1,5 @@
 {
-  "version": "0.2.7-preview",
+  "version": "0.2.8-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 14,
-      "sha256": "d68996e2ec678232aef633ed544b858579e15934b8ee96f4452d638d63a5f9c6"
+      "sha256": "dc980b451ef94b50a14336922d5cfd61624cda86b73353b5655f63ae682084c8"
     },
     {
       "path": "agent/files.py",
@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 28205,
-      "sha256": "4910b3adbdd3ab1db3eb9c3fad380aa8d5efc7a0b34cab4d430e75af0451ad5d"
+      "bytes": 32000,
+      "sha256": "d9eecfc34509adf8324eab7174fa8f40263d03a852e9b12a10918008b68a8cba"
     },
     {
       "path": "agent/runtime.py",
@@ -53,8 +53,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 20674,
-      "sha256": "390bf2ab1b25ad1df8a066d63dd9a98246df2c27bcbeb2d6fdfe4d1ad2b6816f"
+      "bytes": 20824,
+      "sha256": "dd3072efbba43787a17d7d90d24d93ea614364e6cad610d9630d31614b57a126"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -138,8 +138,8 @@
     },
     {
       "path": "app/Services/ResourceService.php",
-      "bytes": 12442,
-      "sha256": "52d96143d52cbd85731a848f97ec31315f34d6410fad9518c998147ba04aed3a"
+      "bytes": 12565,
+      "sha256": "fe5081927331514539a37c4c5ee75dde5bf9486be698bf0abfd66006b572996f"
     },
     {
       "path": "app/Services/ServerService.php",
@@ -152,9 +152,14 @@
       "sha256": "4bba2bcd578537c2ebb08e8f0a7b32487429b0988ea45133e7228f68b1791106"
     },
     {
+      "path": "app/Services/WebsiteService.php",
+      "bytes": 5475,
+      "sha256": "f22114fa3ccc5658105e9cb8787d5b67747ff57ad0dd66366cf824bf71926086"
+    },
+    {
       "path": "app/Services/Worker.php",
-      "bytes": 6796,
-      "sha256": "7d2ecca82032a04f9c3686bbe316f4c1f1fb3707627d4d60a523217e6f328386"
+      "bytes": 6971,
+      "sha256": "a4457b247f88f5226ba4b721e20741bdaf2e7e514d79f949df837e9ab3b4a13f"
     },
     {
       "path": "app/Validators/CronSchedule.php",
@@ -333,8 +338,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 45199,
-      "sha256": "d1ad931ac1861b56558c0f3bd3d06b3b72b30243783044bc1fb9e493f6fbe183"
+      "bytes": 46450,
+      "sha256": "aaf59b52ec7944e8ca845a8356234786cdbd7a8ad1b47aac323cb525cf340e61"
     },
     {
       "path": "public/js/cron-schedule.js",

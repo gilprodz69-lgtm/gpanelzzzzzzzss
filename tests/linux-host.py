@@ -93,7 +93,32 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
             ops.files({**files,'action':'write','path':sub['alias']+'/version.php','content':base64.b64encode(b'<?php echo "subdomain:".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;').decode()})
             assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:'+version.encode())
             assert not fetch(p['domain'],'/version.php').endswith(b'subdomain:'+version.encode())
-            ops.change_php({**p,'php_version':'8.4'})
+            original=ops.find('site',p);before=Path(original['nginx']).read_text()
+            real_run=run;injected=[False]
+            def fail_validation(args,**kwargs):
+                if args==['/usr/sbin/nginx','-t'] and not injected[0]:
+                    injected[0]=True;raise RuntimeError('Injected Nginx validation failure')
+                return real_run(args,**kwargs)
+            for failure in ['nginx','php']:
+                guard=patch('operations.run',side_effect=fail_validation) if failure=='nginx' else patch.object(ops,'change_php',side_effect=RuntimeError('Injected PHP failure'))
+                with guard:
+                    try:ops.update_site({**p,'previous_domain':p['domain'],'domain':'rollback.example.invalid','php_version':'8.4'})
+                    except RuntimeError:pass
+                    else:raise AssertionError('Expected injected edit failure')
+                assert ops.find('site',p)==original
+                assert Path(original['nginx']).read_text()==before
+                assert fetch(p['domain'],'/version.php').endswith(version.encode())
+            try:ops.update_site({**p,'previous_domain':p['domain'],'domain':'alias.example.invalid','php_version':'8.4'})
+            except Rejected:pass
+            else:raise AssertionError('Duplicate hostname accepted')
+            ops.update_site({**p,'previous_domain':p['domain'],'domain':'edited.example.invalid','php_version':'8.4'})
+            p['domain']='edited.example.invalid'
+            # Serve a public-IP hostname only through the runner's loopback connection.
+            ops.update_site({**p,'previous_domain':p['domain'],'domain':'93.184.216.34','php_version':'8.4'})
+            assert fetch('93.184.216.34','/version.php').endswith(b'8.4')
+            ops.update_site({**p,'previous_domain':'93.184.216.34','php_version':'8.4'})
+            assert ops.find('site',p)['public']==original['public']
+            print('PASS site editing, IP to domain, duplicate rejection, Nginx/PHP rollback and preserved files',flush=True)
             assert fetch(p['domain'],'/version.php').endswith(b'8.4')
             assert fetch('alias.example.invalid','/version.php').endswith(b'8.4')
             assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:8.4')

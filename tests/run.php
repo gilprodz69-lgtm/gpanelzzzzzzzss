@@ -217,6 +217,46 @@ check('subdomain has own folder, inherits authorized site and rejects foreign pa
     denied(fn()=>$service->delete('domains',$alias),409);
 });
 
+check('site editing reserves the new hostname without changing the live identity',function()use($db,$master,$server){
+    $resources=new ResourceService($db,$master);$service=new \App\Services\WebsiteService($db,$master);
+    $id=$resources->create('websites',['server_id'=>$server,'domain'=>'editable.example.com','php_version'=>'8.2'])['id'];
+    $db->query("UPDATE websites SET status='active' WHERE id=?",[$id]);
+    $edit=$service->update($id,['domain'=>'edited.example.com','php_version'=>'8.4']);
+    $row=$resources->present($resources->find('websites',$id));eq($row['name'],'editable.example.com');eq($row['status'],'pending');eq($row['config']['pending_update']['domain'],'edited.example.com');
+    denied(fn()=>$service->update($id,['domain'=>'again.example.com']),409);
+    denied(fn()=>$resources->create('websites',['server_id'=>$server,'domain'=>'edited.example.com']),409);
+    $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$edit['job_id']])),true);
+    eq($payload['previous_domain'],'editable.example.com');eq($payload['php_version'],'8.4');
+    \App\Services\WebsiteService::complete($db,$payload,['trusted'=>false]);
+    $row=$resources->present($resources->find('websites',$id));eq($row['name'],'edited.example.com');eq($row['config']['php_version'],'8.4');eq(isset($row['config']['pending_update']),false);
+});
+check('site editing validates scope, protected fields, duplicate names and unsupported PHP',function()use($db,$master,$client,$server){
+    $resources=new ResourceService($db,$master);$service=new \App\Services\WebsiteService($db,$master);
+    $id=$resources->create('websites',['server_id'=>$server,'domain'=>'edit-validation.example.com','php_version'=>'8.3'])['id'];
+    $db->query("UPDATE websites SET status='active' WHERE id=?",[$id]);
+    denied(fn()=>(new \App\Services\WebsiteService($db,$client))->update($id,['domain'=>'bad.example.com']),404);
+    denied(fn()=>$service->update($id,['server_id'=>999]),422);
+    denied(fn()=>$service->update($id,['owner_id'=>999]),422);
+    denied(fn()=>$service->update($id,['php_version'=>'8.4;id']),422);
+    denied(fn()=>$service->update($id,['domain'=>'edited.example.com']),409);
+    denied(fn()=>$service->update($id,['domain'=>'evil.example.com;reboot']),422);
+    eq(isset($service->update($id,['domain'=>'edit-validation.example.com','php_version'=>'8.3'])['job_id']),false);
+    eq($resources->find('websites',$id)['status'],'active');
+});
+check('site edit completion updates linked labels without renaming subdomains or their folders',function()use($db,$master,$server,$masterId){
+    $resources=new ResourceService($db,$master);
+    $id=$resources->create('websites',['server_id'=>$server,'domain'=>'parent-edit.example.com'])['id'];
+    $db->query("UPDATE websites SET status='active' WHERE id=?",[$id]);
+    $sub=$resources->create('domains',['website_id'=>$id,'type'=>'subdomain','prefix'=>'blog','parent_domain'=>'parent-edit.example.com'])['id'];
+    denied(fn()=>(new \App\Services\WebsiteService($db,$master))->update($id,['domain'=>'new-parent.example.com']),409);
+    $db->query("UPDATE jobs SET status='completed' WHERE resource_type='domains' AND resource_id=?",[$sub]);
+    $db->query("UPDATE domains SET status='active' WHERE id=?",[$sub]);
+    $edit=(new \App\Services\WebsiteService($db,$master))->update($id,['domain'=>'new-parent.example.com']);
+    $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$edit['job_id']])),true);
+    \App\Services\WebsiteService::complete($db,$payload,['trusted'=>false]);
+    $row=$resources->present($resources->find('domains',$sub));eq($row['name'],'blog.parent-edit.example.com');eq($row['config']['document_root'],$row['name']);eq($row['config']['domain'],'new-parent.example.com');
+});
+
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

@@ -48,6 +48,7 @@ final class ApiController
             $kind=$m[1]; $id=isset($m[2])?(int)$m[2]:null;
             if($method==='GET') { $this->policy->require("$kind.view"); return $id?['data'=>$resources->present($resources->find($kind,$id))]:['data'=>$resources->list($kind)]; }
             if($method==='POST' && !$id) return $resources->create($kind,$data);
+            if($method==='PATCH' && $id && $kind==='websites') return (new \App\Services\WebsiteService($this->db,$this->policy))->update($id,$data);
             if($method==='DELETE' && $id) return $resources->delete($kind,$id);
         }
         if($path==='/audit_logs' && $method==='GET') { $this->policy->require('audit_logs.view'); [$where,$args]=$this->policy->scope('user_id'); return ['data'=>$this->db->all("SELECT * FROM audit_logs WHERE $where ORDER BY id DESC LIMIT 200",$args)]; }

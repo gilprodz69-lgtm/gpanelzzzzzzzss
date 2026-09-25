@@ -71,6 +71,8 @@ async function listPage(kind){
  if(kind==='websites'){
   const actions=columns.find(([label])=>label==='Ações'),original=actions[1];
   actions[1]=r=>`<div class="account-actions"><button class="button small subtle" data-site-details="${r.id}">Detalhes</button>${r.status==='active'?`<a class="button small subtle" href="https://${esc(r.name)}/" target="_blank" rel="noopener">Abrir site</a>${can('files.manage')?`<a class="button small subtle" href="#/files?site=${r.id}">${icon('files')}Gerenciar arquivos</a>`:''}`:''}${original(r)}</div>`;
+  const siteActions=actions[1];
+  actions[1]=r=>`${r.status==='active'&&can('websites.edit')?`<button class="button small subtle" data-edit-site="${r.id}">${icon('edit')}Editar site</button>`:''}${siteActions(r)}`;
  }
  if(kind==='databases')columns.splice(1,0,['Usuário',r=>esc(r.config.username||r.name)]);
  if(me.user.role==='CLIENT')columns=columns.filter(([label])=>label!=='Servidor');
@@ -102,6 +104,11 @@ async function confirmAction(title,message,handler,button='Confirmar'){showModal
 async function actions(event){
  const target=event.target.closest('button,a[data-action],.mobile-overlay');if(!target)return;
  try{
+  if(target.dataset.editSite){
+   const id=target.dataset.editSite,{data:r}=await api('/websites/'+id);
+   showModal('Editar site',formShell(`<div class="form-grid">${field('domain','Domínio principal ou IP','text',`value="${esc(r.name)}" maxlength="190" autocomplete="off"`)}${select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),r.config.php_version)}</div><p class="notice">Os arquivos permanecem na mesma pasta. Aliases e subdomínios mantêm seus endereços e acompanham a versão PHP do site.</p><p class="helper">Ao trocar o domínio, configure o DNS para esta VPS. O endereço anterior deixa de ser o domínio principal. HTTPS será reconfigurado para o novo endereço; o certificado público depende da validação do DNS.</p>`));
+   bindForm(modal.querySelector('form'),async f=>{const result=await api('/websites/'+id,{method:'PATCH',body:{domain:f.elements.domain.value,php_version:f.elements.php_version.value}});modal.close();toast(result.message);await navigate();});return;
+  }
   if(target.dataset.copyValue!==undefined){await navigator.clipboard.writeText(target.dataset.copyValue);toast('Copiado.');return;}
   if(target.dataset.siteDetails){const {data:r}=await api('/websites/'+target.dataset.siteDetails);showModal('Detalhes do site',`<dl class="details-grid"><div><dt>Site</dt><dd>${esc(r.name)}</dd></div><div><dt>Status</dt><dd>${badge(r.status)}</dd></div><div><dt>PHP</dt><dd>${esc(r.config.php_version)}</dd></div><div><dt>Pasta pública</dt><dd>public_html</dd></div><div><dt>Criado em</dt><dd>${esc(fullDate(r.created_at))}</dd></div></dl>${r.status==='active'&&can('files.manage')?`<a class="button primary" data-action="close-modal" href="#/files?site=${r.id}">Gerenciar arquivos deste site</a>`:''}`);return;}
   if(target.dataset.userDetails){showModal('Detalhes da conta',accountDetails(await api('/users/'+target.dataset.userDetails)));return;}

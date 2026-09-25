@@ -40,7 +40,7 @@ class Operations:
         self.catalog.commit()
 
     def execute(self, operation, p):
-        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'change_php']
+        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'change_php', 'update_site']
         kinds = ['site', 'domain', 'database', 'ssl', 'sftp', 'backup', 'cron', 'firewall', 'container']
         allowed += [f'{verb}_{kind}' for verb in ['create', 'delete'] for kind in kinds]
         if operation not in allowed:
@@ -284,6 +284,60 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         charset, collation = rows[0].split('\t'); tables, size = rows[1].split('\t')
         return {'charset': charset, 'collation': collation, 'tables': int(tables), 'size_bytes': int(size)}
 
+    def update_site(self, p):
+        s = self.find('site', p)
+        host = tls.host(p.get('domain'))
+        version = choice(p.get('php_version'), PHP_VERSIONS)
+        if p.get('previous_domain') != s['domain']:
+            raise Rejected('Site changed since this edit was requested')
+        if host == s['domain']:
+            return {**self.change_php(p), 'domain': host}
+        if host == os.getenv('VPM_PANEL_HOST'):
+            raise Rejected('This hostname is reserved for the control panel')
+        if self.catalog.execute("SELECT 1 FROM resources WHERE kind IN ('site','domain') AND json_extract(data,'$.domain')=?", (host,)).fetchone():
+            raise Rejected('Domain already exists on this server')
+        if not Path(f'/usr/sbin/php-fpm{version}').is_file():
+            raise Rejected('Requested PHP version is not installed')
+        path = Path(s['nginx']); before = path.read_text()
+        cert, key = tls.local_certificate(host)
+        content = before.replace('server_name ' + s['domain'] + ';', 'server_name ' + host + ';')
+        content = content.replace('https://' + s['domain'] + '$request_uri', 'https://' + host + '$request_uri')
+        if 'listen 443' in content:
+            content = re.sub(r'ssl_certificate\s+[^;]+;', f'ssl_certificate {cert};', content)
+            content = re.sub(r'ssl_certificate_key\s+[^;]+;', f'ssl_certificate_key {key};', content)
+        else:
+            content = tls.secure_config(content, host, cert, key)
+        ssl_rows = self.catalog.execute("SELECT id,data FROM resources WHERE tenant=? AND owner=? AND kind='ssl'", (p['tenant_id'], p['owner_id'])).fetchall()
+        try:
+            atomic_write(path, content)
+            run(['/usr/sbin/nginx', '-t']); reload_nginx()
+            updated = {**s, 'domain': host}
+            self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='site' AND id=?", (json.dumps(updated), p['tenant_id'], p['resource_id']))
+            for row in ssl_rows:
+                data = json.loads(row['data'])
+                if data.get('domain') == s['domain']:
+                    data['domain'] = host
+                    self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='ssl' AND id=?", (json.dumps(data), p['tenant_id'], row['id']))
+            self.catalog.commit()
+            # PHP switching restores its files, cron commands and inventory on failure.
+            # Keep it last so a successful switch cannot be followed by another required mutation.
+            self.change_php(p)
+        except Exception:
+            self.catalog.rollback()
+            self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='site' AND id=?", (json.dumps(s), p['tenant_id'], p['resource_id']))
+            for row in ssl_rows:
+                self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='ssl' AND id=?", (row['data'], p['tenant_id'], row['id']))
+            self.catalog.commit()
+            atomic_write(path, before)
+            run(['/usr/sbin/nginx', '-t']); reload_nginx()
+            raise
+        result = {'domain': host, 'php_version': version, 'https': True, 'trusted': False}
+        try:
+            result.update(tls.upgrade_certificate(path, host, p.get('email', os.getenv('VPM_ACME_EMAIL', ''))))
+        except Exception:
+            result['message'] = 'Site atualizado; HTTPS usa certificado local enquanto o DNS e o certificado público não forem validados.'
+        return result
+
     def change_php(self, p):
         s = self.find('site', p)
         version = choice(p.get('php_version'), PHP_VERSIONS)
@@ -298,6 +352,13 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         old_socket = re.search(r'^listen = (.+)$', previous, re.M).group(1)
         new_socket = f"/run/php/vpm-{integer(p['tenant_id'])}-{integer(p['resource_id'])}-php{version}.sock"
         configs = {}
+        cron_configs = {}
+        for row in self.catalog.execute("SELECT data FROM resources WHERE tenant=? AND kind='cron'", (p['tenant_id'],)).fetchall():
+            cron_path = Path(json.loads(row['data'])['path'])
+            content = cron_path.read_text()
+            marker = f" {s['username']} /usr/bin/php{s['php']} "
+            if marker in content:
+                cron_configs[cron_path] = content
         for config in Path('/etc/nginx/conf.d').glob('vpm-*.conf'):
             text = config.read_text()
             if f'fastcgi_pass unix:{old_socket};' in text:
@@ -312,25 +373,23 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             run(['/usr/sbin/nginx', '-t']); reload_nginx()
             old_pool.unlink()
             run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
+            for cron_path, content in cron_configs.items():
+                atomic_write(cron_path, content.replace(f" {s['username']} /usr/bin/php{s['php']} ", f" {s['username']} /usr/bin/php{version} "), 0o644)
+            updated = {**s, 'php': version, 'pool': str(new_pool)}
+            self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='site' AND id=?", (json.dumps(updated), p['tenant_id'], p['resource_id']))
+            self.catalog.commit()
         except Exception:
+            self.catalog.rollback()
             new_pool.unlink(missing_ok=True)
             atomic_write(old_pool, previous)
             for config, text in configs.items():
                 atomic_write(config, text)
+            for cron_path, content in cron_configs.items():
+                atomic_write(cron_path, content, 0o644)
             run(['/usr/bin/systemctl', 'reload', f'php{version}-fpm'])
             run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
             run(['/usr/sbin/nginx', '-t']); reload_nginx()
             raise
-        # Keep existing cron commands in sync with this site's PHP runtime.
-        for row in self.catalog.execute("SELECT data FROM resources WHERE tenant=? AND kind='cron'", (p['tenant_id'],)).fetchall():
-            cron_path = Path(json.loads(row['data'])['path'])
-            content = cron_path.read_text()
-            marker = f" {s['username']} /usr/bin/php{s['php']} "
-            if marker in content:
-                atomic_write(cron_path, content.replace(marker, f" {s['username']} /usr/bin/php{version} "), 0o644)
-        s.update(php=version, pool=str(new_pool))
-        self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='site' AND id=?", (json.dumps(s), p['tenant_id'], p['resource_id']))
-        self.catalog.commit()
         return {'php_version': version}
 
     def create_ssl(self, p):

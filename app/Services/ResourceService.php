@@ -41,6 +41,7 @@ final class ResourceService
             $this->policy->server((int)$server['id'],(int)$owner['id']);
             if($kind!=='firewall_rules') (new Quota($this->db))->check($owner,$kind);
             [$name,$config,$secret]=$this->validate($kind,$data,$owner,(int)$server['id']);
+            if(in_array($kind,['websites','domains'],true)) WebsiteService::available($this->db,(int)$server['id'],$name);
             $now=time();
             $id=$this->db->insert($kind,['tenant_id'=>$owner['tenant_id'],'owner_id'=>$owner['id'],'server_id'=>$server['id'],'name'=>$name,'config_json'=>json_encode($config,JSON_THROW_ON_ERROR),'created_at'=>$now,'updated_at'=>$now]);
             $payload=array_merge($config,$secret,['tenant_id'=>(int)$owner['tenant_id'],'owner_id'=>(int)$owner['id'],'resource_id'=>$id]);

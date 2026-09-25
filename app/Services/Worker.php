@@ -19,9 +19,11 @@ final class Worker
             $payload=json_decode(Crypto::decrypt($job['payload']),true,32,JSON_THROW_ON_ERROR);
             $result=(new AgentClient($this->db))->call($server,$job['operation'],$payload,'job-'.hash('sha256',$job['tenant_id'].':'.$job['id']));
             $this->db->transaction(function() use($job,$result,$payload){
+                $this->db->lockTenant((int)$job['tenant_id']);
                 $this->db->query("UPDATE jobs SET status='completed',result_json=?,finished_at=?,payload=? WHERE id=?",[json_encode($result),time(),Crypto::encrypt('{}'),$job['id']]);
                 if(isset(Catalog::RESOURCES[$job['resource_type']??''])) {
                     $table=$job['resource_type']; $delete=str_starts_with($job['operation'],'delete_');
+                    if($job['operation']==='update_site') WebsiteService::complete($this->db,$payload,$result);
                     if($job['operation']==='change_php') {
                         $config=json_decode($this->db->scalar('SELECT config_json FROM websites WHERE id=? AND tenant_id=?',[$job['resource_id'],$job['tenant_id']]),true);
                         $config['php_version']=$payload['php_version'];
