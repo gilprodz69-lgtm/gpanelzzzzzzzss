@@ -1,5 +1,5 @@
 {
-  "version": "0.2.9-preview",
+  "version": "0.2.10-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -18,8 +18,8 @@
     },
     {
       "path": "VERSION",
-      "bytes": 14,
-      "sha256": "277f0019ba6c310962bdbafd483d5d2293ccc88f63065eeae4770dcebf47aca5"
+      "bytes": 15,
+      "sha256": "00f69bfcca10453f9f643506bfc40540ef82cb1c863ddfd484be118eb6646d8d"
     },
     {
       "path": "agent/files.py",
@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 32000,
-      "sha256": "d9eecfc34509adf8324eab7174fa8f40263d03a852e9b12a10918008b68a8cba"
+      "bytes": 34760,
+      "sha256": "a45f1794ba8d06db27b8d0e758ce0fb9f0f56cb46ba6eea097771932d0909f6d"
     },
     {
       "path": "agent/runtime.py",
@@ -53,8 +53,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 20824,
-      "sha256": "dd3072efbba43787a17d7d90d24d93ea614364e6cad610d9630d31614b57a126"
+      "bytes": 20972,
+      "sha256": "f441fa5cdf00361fc5c4b4be9fcc47ce3f8fb3c58389c6688f4eec3654377ee9"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -73,8 +73,8 @@
     },
     {
       "path": "app/Models/Catalog.php",
-      "bytes": 2592,
-      "sha256": "3ff00053785f25044d237182d2b910f883464b2a1e7f7603ae974c75979f4db1"
+      "bytes": 2607,
+      "sha256": "52565fc7cae768031e24ffda1d26d45514801d87ce40d9382b5dfd3f43bb655e"
     },
     {
       "path": "app/Models/PhpVersions.php",
@@ -117,6 +117,11 @@
       "sha256": "3b1dc494e5ce506bbd98cae27acf457b6612aa59fa11ef203509566562d196f0"
     },
     {
+      "path": "app/Services/DomainService.php",
+      "bytes": 3407,
+      "sha256": "28de366375770423f70f7f08d77a42db917658915f89ddf6a7f9912176ed5921"
+    },
+    {
       "path": "app/Services/Jobs.php",
       "bytes": 587,
       "sha256": "b26283f3695ae147ecbbeb59ecf3a2a116b5d6a470f78a64ffd05372f4703fd1"
@@ -153,13 +158,13 @@
     },
     {
       "path": "app/Services/WebsiteService.php",
-      "bytes": 5568,
-      "sha256": "d517baa973caec447e82b60545b7fb8015a119ab32d5038519d2a5b2c5ad964e"
+      "bytes": 5601,
+      "sha256": "56d51b3e58c4f207830bd7936c4ec728dde07bedac5607bc7619cd14576995d2"
     },
     {
       "path": "app/Services/Worker.php",
-      "bytes": 6971,
-      "sha256": "a4457b247f88f5226ba4b721e20741bdaf2e7e514d79f949df837e9ab3b4a13f"
+      "bytes": 7604,
+      "sha256": "591ca92f14c92ccfb7850a48a02235a78f8b606378ac46c66377e0ae6cf563d6"
     },
     {
       "path": "app/Validators/CronSchedule.php",
@@ -312,6 +317,11 @@
       "sha256": "b9c0d3dc3ae9b7639d34c3285b83d8b47526acd2194b17f511fd8cf493d8becf"
     },
     {
+      "path": "public/css/hosting.css",
+      "bytes": 9164,
+      "sha256": "9c8d3173985116f5f06bfa5c806e3e2e66d9391e80ab72fefbf92ea754eb4529"
+    },
+    {
       "path": "public/css/login.css",
       "bytes": 3583,
       "sha256": "d876d8ef9ec1d03bfb63479c4abcb33d323eb5cbea7ee5f22d076196da06acd4"
@@ -338,8 +348,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 46498,
-      "sha256": "f95525449af09384cc17c2288cacf81d334058b64216c5db95ed82945520ce8e"
+      "bytes": 48220,
+      "sha256": "de7c05452df592db264bb5c6b3edc69bf01947dae68f7500fe1e19e96ee296bd"
     },
     {
       "path": "public/js/cron-schedule.js",
@@ -372,9 +382,14 @@
       "sha256": "2562ba73feea5d9583ad5bf4dcc054c86496547f36419586fcb4ce13ed785e02"
     },
     {
+      "path": "public/js/hosting.js",
+      "bytes": 12648,
+      "sha256": "6d59608d169d25858c91850dfd5f50ff4dc2d1f3fc887a77eec5e0949d098700"
+    },
+    {
       "path": "public/js/icons.js",
-      "bytes": 5060,
-      "sha256": "c2e90ccc600947a54ebde13426bea016884d7aa4e0d9d366514e893df65f02e2"
+      "bytes": 5187,
+      "sha256": "dbff57060d1f6d75d1a25d034341e55dc37950ba15ada0b55866f52adaa19432"
     },
     {
       "path": "public/js/management-ui.js",
@@ -493,8 +508,8 @@
     },
     {
       "path": "resources/views/app.php",
-      "bytes": 968,
-      "sha256": "1945282d4e160ae7c45f798b2e3cc40eb6adc197ee77c4295dccea41c46ca81d"
+      "bytes": 1018,
+      "sha256": "160b453ce3c9b19e0fb088e9952100848d1fd3e159774b0b69a235e0852862a9"
     },
     {
       "path": "scripts/apt-safe.sh",

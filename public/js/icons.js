@@ -1,4 +1,6 @@
 const paths = {
+ pause:'<circle cx="12" cy="12" r="9"/><path d="M9 8v8m6-8v8"/>',
+ external:'<path d="M14 3h7v7m0-7L10 14M10 3H3v18h18v-7"/>',
  mail:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 6 9 7 9-7"/>',
  lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>',
  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',

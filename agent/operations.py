@@ -40,7 +40,7 @@ class Operations:
         self.catalog.commit()
 
     def execute(self, operation, p):
-        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'change_php', 'update_site']
+        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'change_php', 'update_site', 'update_domain']
         kinds = ['site', 'domain', 'database', 'ssl', 'sftp', 'backup', 'cron', 'firewall', 'container']
         allowed += [f'{verb}_{kind}' for verb in ['create', 'delete'] for kind in kinds]
         if operation not in allowed:
@@ -232,6 +232,40 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             result.update(tls.upgrade_certificate(path, host, os.getenv('VPM_ACME_EMAIL', '')))
         except Exception:
             result['message'] = 'Certificado local; validação pública pendente.'
+        return result
+
+    def update_domain(self, p):
+        d = self.find('domain', p); self.find('site', p, 'website_id')
+        host = domain(p['alias']); kind = choice(p['type'], ['alias','subdomain','parked','redirect'])
+        if d['domain'] != p.get('previous_domain'):
+            raise Rejected('Domain changed since this edit was requested')
+        if d.get('type', kind) != kind or d.get('website_id', p['website_id']) != p['website_id']:
+            raise Rejected('Domain binding cannot be changed')
+        if host != d['domain']:
+            if host == os.getenv('VPM_PANEL_HOST') or self.catalog.execute("SELECT 1 FROM resources WHERE kind IN ('site','domain') AND json_extract(data,'$.domain')=?", (host,)).fetchone():
+                raise Rejected('Domain already in use')
+        path=Path(d['path']); before=path.read_text()
+        content=before.replace('server_name '+d['domain']+';', 'server_name '+host+';').replace('https://'+d['domain']+'$request_uri','https://'+host+'$request_uri')
+        if kind == 'redirect':
+            target=domain(p['target'])
+            if target == host: raise Rejected('Redirect loop')
+            second=content.index('server {', content.index('server {')+1)
+            content=content[:second]+re.sub(r'return 301 https://[^;]+;', 'return 301 https://'+target+'$request_uri;', content[second:])
+        if host != d['domain']:
+            cert,key=tls.local_certificate(host)
+            content=re.sub(r'ssl_certificate\s+[^;]+;', f'ssl_certificate {cert};', content)
+            content=re.sub(r'ssl_certificate_key\s+[^;]+;', f'ssl_certificate_key {key};', content)
+        try:
+            atomic_write(path,content); run(['/usr/sbin/nginx','-t']); reload_nginx()
+            updated={**d,'domain':host,'type':kind,'website_id':p['website_id']}
+            self.catalog.execute("UPDATE resources SET data=? WHERE tenant=? AND kind='domain' AND id=?", (json.dumps(updated),p['tenant_id'],p['resource_id']));self.catalog.commit()
+        except Exception:
+            self.catalog.rollback();atomic_write(path,before);run(['/usr/sbin/nginx','-t']);reload_nginx();raise
+        result={'domain':host,'https':True}
+        if host != d['domain']:
+            result['trusted']=False
+            try: result.update(tls.upgrade_certificate(path,host,p.get('email',os.getenv('VPM_ACME_EMAIL',''))))
+            except Exception: result['message']='Domínio atualizado com certificado local; validação pública pendente.'
         return result
 
     def delete_domain(self, p):
@@ -495,7 +529,12 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
                 os.fchmod(uploads_fd, 0o2700)
             finally: os.close(uploads_fd)
         finally: os.close(private_fd)
-        return unprivileged(account, lambda: files.operate(s['public'], p, private))
+        def operate_public():
+            # The service's 0077 mask protects secrets, but web files must be readable
+            # by their inherited www-data group. Change only the unprivileged child.
+            os.umask(0o027)
+            return files.operate(s['public'], p, private)
+        return unprivileged(account, operate_public)
 
     def create_backup(self, p):
         import pwd

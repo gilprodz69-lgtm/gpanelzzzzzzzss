@@ -17,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'agent'))
 from operations import Operations, PHP_VERSIONS
 from runtime import run
 from validation import Rejected
+# Match the deployed agent service, not the CI shell's more permissive mask.
+os.umask(0o077)
 ops=Operations()
 cron_fixtures=[]
 def fetch(host, path='/'):
@@ -41,6 +43,9 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         ops.files({**files,'action':'upload_chunk','id':token,'offset':0,'content':'aGVsbG8='})
         ops.files({**files,'action':'upload_finish','id':token})
         assert fetch(p['domain'],'/uploaded.txt').endswith(b'hello')
+        ops.files({**files,'action':'mkdir','path':'web-folder'})
+        ops.files({**files,'action':'write','path':'web-folder/index.html','content':base64.b64encode(b'readable-by-nginx').decode()})
+        assert fetch(p['domain'],'/web-folder/').endswith(b'readable-by-nginx')
         if index==1:
             import tempfile,zipfile,hashlib
             with tempfile.TemporaryFile() as source:
@@ -122,6 +127,11 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
             assert fetch(p['domain'],'/version.php').endswith(b'8.4')
             assert fetch('alias.example.invalid','/version.php').endswith(b'8.4')
             assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:8.4')
+            old_sub=sub['alias']
+            ops.update_domain({**sub,'previous_domain':old_sub,'alias':'news.'+p['domain']})
+            assert fetch('news.'+p['domain'],'/version.php').endswith(b'subdomain:8.4')
+            assert (Path(site['public'])/old_sub/'version.php').is_file()
+            print('PASS domain rename retains document root and PHP content',flush=True)
             ops.delete_domain(sub)
             assert (Path(site['public'])/sub['alias']/'version.php').is_file()
             assert not Path('/etc/nginx/conf.d/vpm-domain-999-51.conf').exists()

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/management.css">
+  <link rel="stylesheet" href="/css/hosting.css">
   <link rel="stylesheet" href="/css/file-manager.css">
   <link rel="stylesheet" href="/css/file-editor.css">
   <link rel="stylesheet" href="/css/login.css">

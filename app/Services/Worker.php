@@ -24,6 +24,12 @@ final class Worker
                 if(isset(Catalog::RESOURCES[$job['resource_type']??''])) {
                     $table=$job['resource_type']; $delete=str_starts_with($job['operation'],'delete_');
                     if($job['operation']==='update_site') WebsiteService::complete($this->db,$payload,$result);
+                    if($job['operation']==='update_domain') {
+                        $config=json_decode($this->db->scalar('SELECT config_json FROM domains WHERE id=? AND tenant_id=?',[$job['resource_id'],$job['tenant_id']]),true);
+                        unset($config['pending_update']);$config['alias']=$payload['alias'];
+                        if($config['type']==='redirect')$config['target']=$payload['target'];
+                        $this->db->query('UPDATE domains SET name=?,config_json=? WHERE id=? AND tenant_id=?',[$payload['alias'],json_encode($config),$job['resource_id'],$job['tenant_id']]);
+                    }
                     if($job['operation']==='change_php') {
                         $config=json_decode($this->db->scalar('SELECT config_json FROM websites WHERE id=? AND tenant_id=?',[$job['resource_id'],$job['tenant_id']]),true);
                         $config['php_version']=$payload['php_version'];

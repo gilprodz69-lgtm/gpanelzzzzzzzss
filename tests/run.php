@@ -260,6 +260,28 @@ check('site edit completion updates linked labels without renaming subdomains or
     $row=$resources->present($resources->find('domains',$sub));eq($row['name'],'blog.parent-edit.example.com');eq($row['config']['document_root'],$row['name']);eq($row['config']['domain'],'new-parent.example.com');
 });
 
+check('domain editing preserves folder and scope, validates parent, duplicate and target',function()use($db,$master,$client,$server){
+    $resources=new ResourceService($db,$master);$service=new \App\Services\DomainService($db,$master);
+    $site=$resources->create('websites',['server_id'=>$server,'domain'=>'edit-domain.example.com'])['id'];
+    $db->query("UPDATE websites SET status='active' WHERE id=?",[$site]);
+    $id=$resources->create('domains',['website_id'=>$site,'type'=>'subdomain','prefix'=>'blog','parent_domain'=>'edit-domain.example.com'])['id'];
+    $db->query("UPDATE domains SET status='active' WHERE id=?",[$id]);
+    denied(fn()=>(new \App\Services\DomainService($db,$client))->update($id,['domain'=>'evil.example.com']),404);
+    denied(fn()=>$service->update($id,['domain'=>'foreign.example.com']),422);
+    denied(fn()=>$service->update($id,['website_id'=>999]),422);
+    $edit=$service->update($id,['domain'=>'news.edit-domain.example.com']);
+    $row=$resources->present($resources->find('domains',$id));eq($row['name'],'blog.edit-domain.example.com');eq($row['config']['document_root'],$row['name']);eq($row['status'],'pending');
+    $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$edit['job_id']])),true);eq($payload['alias'],'news.edit-domain.example.com');
+    denied(fn()=>$resources->create('domains',['website_id'=>$site,'domain'=>'news.edit-domain.example.com']),409);
+    denied(fn()=>$service->update($id,['domain'=>'again.edit-domain.example.com']),409);
+    $db->query("UPDATE domains SET status='failed' WHERE id=?",[$id]);
+    eq(isset($service->update($id,['domain'=>'news.edit-domain.example.com'])['job_id']),true);
+    $redirect=$resources->create('domains',['website_id'=>$site,'type'=>'redirect','domain'=>'redirect-edit.example.com','target'=>'target.example.com'])['id'];
+    $db->query("UPDATE domains SET status='active' WHERE id=?",[$redirect]);
+    denied(fn()=>$service->update($redirect,['target'=>'redirect-edit.example.com']),422);
+    eq(isset($service->update($redirect,['target'=>'new-target.example.com'])['job_id']),true);
+});
+
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

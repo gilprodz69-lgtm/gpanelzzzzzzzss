@@ -11,9 +11,9 @@ final class WebsiteService
 {
     public function __construct(private Database $db,private Policy $policy) {}
 
-    public static function available(Database $db,int $server,string $host,?int $except=null): void {
+    public static function available(Database $db,int $server,string $host,?int $except=null,string $exceptTable='websites'): void {
         foreach(['websites','domains'] as $table) foreach($db->all("SELECT id,name,config_json FROM `$table` WHERE server_id=? AND deleted_at IS NULL",[$server]) as $r) {
-            if($table==='websites' && (int)$r['id']===$except) continue;
+            if($table===$exceptTable && (int)$r['id']===$except) continue;
             $config=json_decode($r['config_json'],true);
             if($r['name']===$host || ($config['pending_update']['domain']??null)===$host) throw new HttpError(409,'Este endereço já está cadastrado ou reservado no servidor.');
         }

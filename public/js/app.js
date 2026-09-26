@@ -1,5 +1,6 @@
 import{accountActions,accountDetails,databaseDetails,validity,fullDate}from'./management-ui.js';
 import{domainColumns,domainDetails}from'./domains.js';
+import{hostingPage,bindHosting}from'./hosting.js';
 import{api,setCsrf,esc,number,date,badge,ApiError}from'./api.js';
 import{icon}from'./icons.js';
 import{fileManagerPage,bindFileManager}from'./file-manager.js';
@@ -51,6 +52,7 @@ async function navigate(){
 function applyWidths(){document.querySelectorAll('[data-width]').forEach(el=>el.style.width=`${Math.max(0,Math.min(100,Number(el.dataset.width)||0))}%`);}
 function pageHeading(title,description,action=''){return`<div class="page-heading"><div><h1>${esc(title)}</h1><p>${esc(description)}</p></div>${action}</div>`;}
 async function listPage(kind){
+ if(['websites','domains'].includes(kind))return hostingPage(kind,ctx);
  const endpoint=['resellers','clients'].includes(kind)?'users':kind;let rows=(await api('/'+endpoint)).data;
  if(kind==='resellers')rows=rows.filter(u=>u.role==='RESELLER');if(kind==='clients')rows=rows.filter(u=>u.role==='CLIENT');
  const create=can(`${endpoint}.create`),quota=me.quotas[endpoint],atLimit=quota?.limit!==null&&quota?.used>=quota?.limit;
@@ -88,6 +90,7 @@ async function apiPage(){const tokens=(await api('/security/tokens')).data;retur
 async function servicesPage(){return pageHeading('Serviços','Gerencie os serviços autorizados em cada servidor.')+`<div class="file-toolbar">${select('server','Servidor',[['','Selecione um servidor'],...me.servers.map(s=>[s.id,s.name])])}<button class="button primary" data-action="load-services">Consultar serviços</button></div><section class="panel" id="service-results">${empty('Selecione um servidor','O status será consultado diretamente no agente.','services')}</section>`;}
 async function filesPage(){const sites=(await api('/websites')).data.filter(s=>s.status==='active');return pageHeading('Gerenciador de arquivos','Acesse os arquivos de um site ativo com isolamento de diretório.')+`<div class="file-toolbar">${select('website','Site',[['','Selecione um site'],...sites.map(s=>[s.id,s.name])])}<input class="input" id="file-path" placeholder="Caminho relativo, ex.: assets" aria-label="Caminho relativo"><button class="button primary" data-action="load-files">Abrir pasta</button><button class="button" data-action="new-file">${icon('plus')}Novo arquivo</button><button class="button" data-action="new-folder">Nova pasta</button><label class="button">Upload<input type="file" id="file-upload" hidden></label></div><section class="panel" id="file-results">${empty('Selecione um site para começar','Edição e upload de arquivos de até 1 MB.','files')}</section>`;}
 function bindPage(){
+ bindHosting();
  bindFileManager({showModal,modal,formShell,bindForm,toast});
  document.querySelector('#table-search')?.addEventListener('input',e=>{const term=e.target.value.toLocaleLowerCase('pt-BR');let shown=0;document.querySelectorAll('[data-search-row]').forEach(row=>{row.hidden=!row.textContent.toLocaleLowerCase('pt-BR').includes(term);if(!row.hidden)shown++;});const no=document.querySelector('#search-empty');if(no)no.hidden=shown>0;});
  const passwordForm=document.querySelector('#password-form');if(passwordForm)bindForm(passwordForm,async f=>{const r=await api('/security/password',{method:'POST',body:Object.fromEntries(new FormData(f))});toast(r.message);login();});
@@ -108,6 +111,15 @@ async function actions(event){
    const id=target.dataset.editSite,{data:r}=await api('/websites/'+id);
    showModal('Editar site',formShell(`<div class="form-grid">${field('domain','Domínio principal ou IP','text',`value="${esc(r.name)}" maxlength="190" autocomplete="off"`)}${select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),r.config.php_version)}</div><p class="notice">Os arquivos permanecem na mesma pasta. Aliases e subdomínios mantêm seus endereços e acompanham a versão PHP do site.</p><p class="helper">Ao trocar o domínio, configure o DNS para esta VPS. O endereço anterior deixa de ser o domínio principal. HTTPS será reconfigurado para o novo endereço; o certificado público depende da validação do DNS.</p>`));
    bindForm(modal.querySelector('form'),async f=>{const result=await api('/websites/'+id,{method:'PATCH',body:{domain:f.elements.domain.value,php_version:f.elements.php_version.value}});modal.close();toast(result.message);await navigate();});return;
+  }
+  if(target.dataset.editDomain){
+   const id=target.dataset.editDomain,{data:r}=await api('/domains/'+id);
+   showModal('Editar domínio',formShell(field('domain','Domínio completo','text',`value="${esc(r.name)}" maxlength="190"`)+(r.config.type==='redirect'?field('target','Domínio de destino','text',`value="${esc(r.config.target)}" maxlength="190"`):'')+`<p class="notice">O conteúdo e a pasta atual serão preservados.${r.config.type==='subdomain'?` Pasta: public_html/${esc(r.config.document_root)}. Domínio principal: ${esc(r.config.parent_domain)}.`:''}</p><p class="helper">Ao trocar o endereço, atualize o DNS no provedor. O certificado HTTPS será reconfigurado para o novo nome.</p>`));
+   bindForm(modal.querySelector('form'),async f=>{const result=await api('/domains/'+id,{method:'PATCH',body:Object.fromEntries(new FormData(f))});modal.close();toast(result.message);await navigate();});return;
+  }
+  if(target.dataset.hostMetrics){
+   const id=target.dataset.hostMetrics,r=await api(`/servers/${id}/metrics?hours=1`),last=r.data.at(-1);
+   showModal('Métricas do servidor',last?`<p class="helper">Consumo total do servidor compartilhado pelos sites. Última coleta: ${esc(fullDate(last.created_at))}.</p><dl class="details-grid"><div><dt>CPU</dt><dd>${number(+Number(last.cpu).toFixed(1))}%</dd></div><div><dt>RAM</dt><dd>${number(+Number(last.ram).toFixed(1))}%</dd></div><div><dt>Disco</dt><dd>${number(+Number(last.disk).toFixed(1))}%</dd></div></dl>`:'<p class="helper">Nenhuma coleta na última hora. Verifique o agente e tente atualizar.</p>');return;
   }
   if(target.dataset.copyValue!==undefined){await navigator.clipboard.writeText(target.dataset.copyValue);toast('Copiado.');return;}
   if(target.dataset.siteDetails){const {data:r}=await api('/websites/'+target.dataset.siteDetails);showModal('Detalhes do site',`<dl class="details-grid"><div><dt>Site</dt><dd>${esc(r.name)}</dd></div><div><dt>Status</dt><dd>${badge(r.status)}</dd></div><div><dt>PHP</dt><dd>${esc(r.config.php_version)}</dd></div><div><dt>Pasta pública</dt><dd>public_html</dd></div><div><dt>Criado em</dt><dd>${esc(fullDate(r.created_at))}</dd></div></dl>${r.status==='active'&&can('files.manage')?`<a class="button primary" data-action="close-modal" href="#/files?site=${r.id}">Gerenciar arquivos deste site</a>`:''}`);return;}

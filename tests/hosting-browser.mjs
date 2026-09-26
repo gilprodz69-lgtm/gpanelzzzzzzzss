@@ -1,0 +1,40 @@
+import{chromium}from'playwright';
+import assert from'node:assert/strict';
+const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:1786,height:900}}),errors=[];
+page.on('pageerror',e=>errors.push(e.message));
+const sites=Array.from({length:12},(_,i)=>({id:i+1,name:`site${String(i+1).padStart(2,'0')}.example.com`,owner_id:1,server_id:i%2+1,status:i===11?'failed':'active',created_at:1789900000+i,config:{php_version:'8.2'}}));
+const domains=[{id:1,name:'example.com',owner_id:1,server_id:1,status:'active',created_at:1789900000,config:{type:'alias',website_id:1,domain:sites[0].name}},{id:2,name:'blog.example.com',owner_id:1,server_id:1,status:'active',created_at:1789900001,config:{type:'subdomain',website_id:1,domain:sites[0].name,document_root:'blog.example.com',parent_domain:'example.com'}}];
+let role='MASTER',edited;
+await page.route('**/api/v1/**',async route=>{const path=new URL(route.request().url()).pathname;let result={data:[]};
+ if(path.endsWith('/auth/me'))result={user:{id:1,name:'Administrador',role},permissions:['websites.view','websites.create','websites.edit','websites.delete','domains.view','domains.create','domains.edit','domains.delete','files.manage','metrics.view','jobs.view'],csrf:'test',quotas:{},servers:[{id:1,name:'BR-SERVER',address:'191.252.212.254',os:'Ubuntu 24.04'},{id:2,name:'US-SERVER',address:'192.0.2.20'}],catalog:{}};
+ else if(path.endsWith('/websites'))result={data:sites};
+ else if(path.endsWith('/domains'))result={data:domains};
+ else if(path.endsWith('/domains/2')){if(route.request().method()==='PATCH'){edited=route.request().postDataJSON();result={message:'Atualização enviada'};}else result={data:domains[1]};}
+ else if(path.includes('/metrics'))result={data:[{cpu:12,ram:30,disk:20,created_at:1789900000}]};
+ await route.fulfill({json:result});
+});
+const base=process.env.VPM_TEST_URL||'http://127.0.0.1:8080';
+try{
+ await page.goto(base+'/#/websites');await page.locator('[data-host-results] tbody tr').first().waitFor();
+ assert.equal(await page.locator('[data-host-results] tbody tr').count(),10);
+ await page.getByRole('button',{name:'Próxima página',exact:true}).click();assert.equal(await page.locator('tbody tr').count(),2);
+ await page.getByLabel('Filtrar servidor').selectOption('1');assert.equal(await page.locator('tbody tr').count(),6);
+ await page.getByLabel('Pesquisar nesta lista').fill('site01');assert.equal(await page.locator('tbody tr').count(),1);
+ await page.getByRole('button',{name:'Limpar pesquisa'}).click();await page.getByLabel('Filtrar servidor').selectOption('');
+ await page.getByLabel('Ordenação').selectOption('name');assert.match(await page.locator('tbody tr').first().textContent(),/site01/);
+ await page.getByLabel('Selecionar página',{exact:true}).check();assert.match(await page.locator('[data-host-selection]').textContent(),/10 selecionado/);
+ await page.getByRole('button',{name:'Limpar seleção',exact:true}).click();
+ await page.getByRole('button',{name:'Visualização em grade'}).click();assert.equal(await page.locator('.host-grid').count(),1);
+ await page.getByRole('button',{name:'Visualização em lista'}).click();
+ await page.getByRole('button',{name:'Métricas do servidor'}).first().click();await page.getByRole('heading',{name:'Métricas do servidor'}).waitFor();assert.match(await page.locator('#modal').textContent(),/12%/);await page.getByRole('button',{name:'Fechar',exact:true}).click();
+ await page.getByLabel('Pesquisar nesta lista').fill('site01');await page.screenshot({path:'test-results/sites-redesign.png'});
+ await page.locator('nav [data-route=domains]').click();await page.locator('[data-hosting=domains] tbody tr').first().waitFor();
+ assert.equal(await page.locator('tbody tr').count(),2);await page.getByLabel('Filtrar tipo').selectOption('subdomain');assert.equal(await page.locator('tbody tr').count(),1);
+ await page.getByRole('button',{name:'Editar domínio',exact:true}).click();await page.getByRole('heading',{name:'Editar domínio',exact:true}).waitFor();
+ await page.getByLabel('Domínio completo',{exact:true}).fill('news.example.com');await page.getByRole('button',{name:'Salvar',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#modal').open);assert.deepEqual(edited,{domain:'news.example.com'});
+ await page.getByLabel('Filtrar tipo').selectOption('');await page.screenshot({path:'test-results/domains-redesign.png'});
+ await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ role='CLIENT';await page.goto(base+'/#/websites');await page.reload();await page.locator('[data-hosting=websites]').waitFor();
+ assert.equal(await page.getByLabel('Filtrar servidor').count(),0);assert.equal(await page.getByRole('columnheader',{name:'Servidor',exact:true}).count(),0);
+ assert.deepEqual(errors,[]);console.log('PASS hosting redesign: filters, sorting, pagination, selection, views, metrics, domain editing, mobile and client server visibility');
+}finally{await browser.close();}
