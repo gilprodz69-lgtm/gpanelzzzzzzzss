@@ -1,5 +1,5 @@
 {
-  "version": "0.2.10-preview",
+  "version": "0.2.11-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -18,13 +18,13 @@
     },
     {
       "path": "VERSION",
-      "bytes": 15,
-      "sha256": "00f69bfcca10453f9f643506bfc40540ef82cb1c863ddfd484be118eb6646d8d"
+      "bytes": 16,
+      "sha256": "f226935c83f9ac3a2a2a55edc05e3a3ef9687bf9b42451689fe01dcf24154944"
     },
     {
       "path": "agent/files.py",
-      "bytes": 11710,
-      "sha256": "bfd4619b605867a3c211d9b24a640346ccd90b62574656e86e0ea054f1facc48"
+      "bytes": 16212,
+      "sha256": "d06ba45b9981b6becdfec17f4729fdec135741ee8f988eae87136d74d0790a33"
     },
     {
       "path": "agent/operations.py",
@@ -38,8 +38,8 @@
     },
     {
       "path": "agent/server.py",
-      "bytes": 5434,
-      "sha256": "eaac1d7eafd7626c2a6ba22263530bb8ae93f269f1f15da59066601104f1835d"
+      "bytes": 5435,
+      "sha256": "bdc38d25b2db72f57fd274cfbc219b692f9431f9d28f60105168b5dd2ddba709"
     },
     {
       "path": "agent/tls.py",
@@ -53,8 +53,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 20972,
-      "sha256": "f441fa5cdf00361fc5c4b4be9fcc47ce3f8fb3c58389c6688f4eec3654377ee9"
+      "bytes": 21145,
+      "sha256": "4cc4f5d9681b100a2aa75ac10d6b65c20ffc8584bb31982b23c9fd8b58b0bd5b"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -98,8 +98,8 @@
     },
     {
       "path": "app/Services/AgentClient.php",
-      "bytes": 1983,
-      "sha256": "85cba3d551531021e861070e4fab63370813885c63f5a78836053aa57e457820"
+      "bytes": 2156,
+      "sha256": "48a0303a1479f5d8cf810a7b51b19c34295593d11ee021963e8cf21b4115fc9f"
     },
     {
       "path": "app/Services/Audit.php",
@@ -213,13 +213,18 @@
     },
     {
       "path": "deploy/Dockerfile",
-      "bytes": 569,
-      "sha256": "32bd57dfdaecb1989a57aa6259c37ba3c83dea0ae261c438ab102a8250df7584"
+      "bytes": 580,
+      "sha256": "9704588a1f00e5a61381c84b2c1c68ed589c20c1a02b6be3cf3bdff5087496f3"
     },
     {
       "path": "deploy/nginx-container.conf",
-      "bytes": 506,
-      "sha256": "5c05d2dfbf6f41ecd112d026641364d75382cd14167f9843efbdffe5ea6b9dce"
+      "bytes": 760,
+      "sha256": "25492ad411527133ed9129c51af9d24d0515075abcbbaaea84c121939fb26791"
+    },
+    {
+      "path": "deploy/nginx-upload.conf",
+      "bytes": 254,
+      "sha256": "af860dd4233baa5d940b602f4432637df9d64b7deba70fb97808876abc0b13ee"
     },
     {
       "path": "deploy/vpsmanager-agent.service",
@@ -338,8 +343,8 @@
     },
     {
       "path": "public/index.php",
-      "bytes": 2839,
-      "sha256": "edd708e1906851482a764543da213eb4a05d7c7fdf05624b3fa350bc9128c8f1"
+      "bytes": 3758,
+      "sha256": "9d578bfe6506c6688fc8f0f000cb06c27a75a7d821c97463bd6b2e036fef268e"
     },
     {
       "path": "public/js/api.js",
@@ -373,8 +378,8 @@
     },
     {
       "path": "public/js/file-manager.js",
-      "bytes": 23580,
-      "sha256": "330c23d81bf9a17f8a7907fee88a55a5d97fd66665acad50e92541d2dcdd379d"
+      "bytes": 25829,
+      "sha256": "e00eb33ee8aa53bdec76e9174ef6a2ffe98a3e2d96e41960a93e49369045a483"
     },
     {
       "path": "public/js/forms.js",
@@ -395,6 +400,11 @@
       "path": "public/js/management-ui.js",
       "bytes": 2833,
       "sha256": "8e4e095aa43acc4ebbafc11f2354410241cfeaf1c117f1d2ece60750348cd214"
+    },
+    {
+      "path": "public/js/upload.js",
+      "bytes": 1942,
+      "sha256": "b4e7013097b2a0be50bf98e6de55c4b47ee460074c4d0fc8e5a44403929f1cd1"
     },
     {
       "path": "public/router.php",
@@ -533,8 +543,8 @@
     },
     {
       "path": "scripts/install-ubuntu.sh",
-      "bytes": 11213,
-      "sha256": "9a97a04b4fd25ea4b0b68367785f42b50e345247355f61673c77ec502edf3ea7"
+      "bytes": 11354,
+      "sha256": "91caf0c7517bb17251597800e0125fcb66633ad3251543021252ff1ebc58a124"
     },
     {
       "path": "scripts/panel-certificate.py",
@@ -558,8 +568,8 @@
     },
     {
       "path": "scripts/upgrade-ubuntu.sh",
-      "bytes": 6279,
-      "sha256": "36831b64789ca839232127397479f129be9a7ab46e60b28d7ea42d811905d661"
+      "bytes": 6610,
+      "sha256": "c87c48c75c0cb2afc5ce2f454df2f71823b0bac3bf15e7c10c6aeb992ec87d75"
     },
     {
       "path": "scripts/wait-agent.py",

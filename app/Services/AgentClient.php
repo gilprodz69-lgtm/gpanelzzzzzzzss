@@ -13,7 +13,9 @@ final class AgentClient
         $timestamp=(string)time(); $nonce=bin2hex(random_bytes(16));
         $signature=hash_hmac('sha256',"$timestamp\n$nonce\n$body",Crypto::decrypt($credential['secret']));
         $c=curl_init($server['agent_url'].'/v1/execute');
-        curl_setopt_array($c,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$body,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>180,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_SSL_VERIFYPEER=>true,CURLOPT_SSL_VERIFYHOST=>2,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS|(getenv('AGENT_ALLOW_HTTP_LOOPBACK')==='1'?CURLPROTO_HTTP:0),CURLOPT_HTTPHEADER=>['Content-Type: application/json','X-Timestamp: '.$timestamp,'X-Nonce: '.$nonce,'X-Signature: '.$signature]]);
+        // The HTTP/1.0 agent does not send 100 Continue. Avoid cURL's one-second
+        // wait before sending large signed bodies; authentication is unchanged.
+        curl_setopt_array($c,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$body,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>180,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_SSL_VERIFYPEER=>true,CURLOPT_SSL_VERIFYHOST=>2,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS|(getenv('AGENT_ALLOW_HTTP_LOOPBACK')==='1'?CURLPROTO_HTTP:0),CURLOPT_HTTPHEADER=>['Content-Type: application/json','Expect:','X-Timestamp: '.$timestamp,'X-Nonce: '.$nonce,'X-Signature: '.$signature]]);
         $ca=getenv('AGENT_CA_FILE'); if($ca) curl_setopt($c,CURLOPT_CAINFO,$ca);
         $raw=curl_exec($c); $error=curl_error($c); $status=curl_getinfo($c,CURLINFO_RESPONSE_CODE); curl_close($c);
         if($raw===false) throw new HttpError(502,'Agente indisponível: '.$error);

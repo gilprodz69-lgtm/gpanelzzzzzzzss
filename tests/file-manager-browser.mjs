@@ -6,10 +6,17 @@ const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1536,height:1024}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 const password=(await readFile('storage/LOCAL-ACCESS.txt','utf8')).match(/Senha: (.+)/)[1].trim();
-await page.goto('http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
+await page.goto(process.env.VPM_TEST_URL||'http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
 let rows=[{name:'assets',directory:true,size:4096,modified:Math.floor(Date.now()/1000),mode:'2750'},{name:'index.php',directory:false,size:24,modified:Math.floor(Date.now()/1000),mode:'640'}],trash=[];
 const calls=[];
 await page.route('**/api/v1/websites',route=>route.fulfill({json:{data:[{id:800,name:'site.example.test',status:'active'}]}}));
+await page.route('**/api/v1/files/upload-chunk',async route=>{
+ const h=route.request().headers(),bytes=route.request().postDataBuffer();
+ assert.equal(h['content-type'],'application/octet-stream');assert(bytes.length<=8*1048576);
+ const body={action:'upload_chunk',website_id:Number(h['x-upload-site']),offset:Number(h['x-upload-offset']),id:h['x-upload-id']};
+ calls.push(body);
+ await route.fulfill({json:{offset:body.offset+bytes.length}});
+});
 await page.route('**/api/v1/files',async route=>{
  const body=route.request().postDataJSON();calls.push(body);let result={message:'OK'};
  if(body.action==='list')result={data:body.path?[]:rows};
@@ -42,7 +49,7 @@ await page.getByRole('button',{name:'Fechar editor',exact:true}).click();
 await page.locator('#modal').waitFor({state:'hidden'});
 await page.locator('[data-entry="index.php"]').click({button:'right'});await page.locator('#fm-context [data-fm=rename]').click();await page.locator('dialog input[name=target]').fill('main.php');await page.locator('dialog button[type=submit]').click();await page.locator('[data-entry="main.php"]').waitFor();
 await page.locator('[data-entry="main.php"]').click();await page.locator('#fm-selection [data-fm=trash]').click();await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});await page.locator('.fm-sidebar [data-fm=bin]').click();await page.locator('[data-entry="'+ 'a'.repeat(32)+'"]').click();await page.locator('#fm-selection [data-fm=restore]').click();await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});await page.locator('.fm-sidebar [data-fm=public]').click();await page.locator('[data-entry="main.php"]').waitFor();
-await page.locator('#fm-upload').setInputFiles({name:'binary.dat',mimeType:'application/octet-stream',buffer:Buffer.alloc(1500000,65)});await page.getByText('Upload concluído.',{exact:true}).waitFor();assert.equal(calls.filter(c=>c.action==='upload_chunk').length,2);assert(calls.some(c=>c.action==='upload_finish'));
+await page.locator('#fm-upload').setInputFiles({name:'binary.dat',mimeType:'application/octet-stream',buffer:Buffer.alloc(1500000,65)});await page.getByText('Upload concluído.',{exact:true}).waitFor();assert.equal(calls.filter(c=>c.action==='upload_chunk').length,1);assert(calls.some(c=>c.action==='upload_finish'));
 for(const width of [1920,1024,768,390]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'overflow '+width);}
 await page.screenshot({path:'test-results/file-manager-mobile.png',fullPage:true});
 assert.deepEqual(errors,[]);await browser.close();console.log('PASS file manager navigation, editor, context rename, trash/restore, chunked upload and responsive layout');

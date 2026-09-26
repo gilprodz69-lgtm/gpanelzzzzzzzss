@@ -146,12 +146,13 @@ final class ApiController
         foreach((new Quota($this->db))->chain($u) as $account) if($account['role']!=='MASTER' && !in_array('files',(new Quota($this->db))->plan($account)['features']??[],true)) throw new HttpError(403,'Gerenciador de arquivos não permitido pelo plano.');
         $site=(new ResourceService($this->db,$this->policy))->find('websites',Input::integer($d['website_id']??null,'Site'));
         if($site['status']!=='active') throw new HttpError(409,'Site ainda não está ativo.');
-        $action=Input::choice($d['action']??'list',['list','read','write','mkdir','delete','rename','copy','zip','unzip','chmod','trash','trash_list','restore','purge','download','upload_begin','upload_chunk','upload_finish','upload_cancel','info'],'Ação');
+        $action=Input::choice($d['action']??'list',['list','read','write','mkdir','delete','delete_tree','rename','copy','copy_many','move_many','zip','unzip','chmod','trash','trash_list','restore','purge','download','upload_begin','upload_chunk','upload_finish','upload_cancel','info'],'Ação');
         $payload=['tenant_id'=>(int)$site['tenant_id'],'owner_id'=>(int)$site['owner_id'],'website_id'=>(int)$site['id'],'domain'=>$site['name'],'action'=>$action,'path'=>$d['path']??'','target'=>$d['target']??'','content'=>$d['content']??'','mode'=>$d['mode']??'644'];
-        foreach(['id','offset','size'] as $key) if(array_key_exists($key,$d)) $payload[$key]=$d[$key];
+        foreach(['id','offset','size','paths','overwrite'] as $key) if(array_key_exists($key,$d)) $payload[$key]=$d[$key];
         $server=$this->policy->server((int)$site['server_id']);
         $result=(new AgentClient($this->db))->call($server,'files',$payload,bin2hex(random_bytes(16)));
-        Audit::write($this->db,$u,'files.'.$action,$site['name']); return $result;
+        // Record the transfer lifecycle, not a database audit entry for every block.
+        if($action!=='upload_chunk') Audit::write($this->db,$u,'files.'.$action,$site['name']); return $result;
     }
     private function security(string $method,string $path,array $d): array {
         $this->auth->sessionOnly(); $u=$this->policy->user;

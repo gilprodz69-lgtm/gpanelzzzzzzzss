@@ -39,6 +39,45 @@ class FileTests(unittest.TestCase):
         with self.assertRaises(Rejected): self.call('upload_finish', id=token)
         self.call('upload_cancel', id=token)
         self.assertFalse((self.root/'new').exists())
+    def test_batch_transfer_preflight_and_nested_selection(self):
+        (self.root/'src').mkdir();(self.root/'dest').mkdir();(self.root/'src/a').write_text('a');(self.root/'src/b').write_text('b')
+        self.call('copy_many',paths=['src/a','src/b'],target='dest')
+        self.assertEqual((self.root/'dest/b').read_text(),'b')
+        with self.assertRaises(Rejected):self.call('move_many',paths=['src/a','src/b'],target='dest')
+        self.assertTrue((self.root/'src/a').exists())
+        self.call('move_many',paths=['src/a','src/b'],target='')
+        self.assertFalse((self.root/'src/a').exists());self.assertEqual((self.root/'a').read_text(),'a')
+        with self.assertRaises(Rejected):self.call('copy_many',paths=['dest','dest/a'],target='src')
+        with self.assertRaises(Rejected):self.call('move_many',paths=['dest'],target='dest')
+        with self.assertRaises(Rejected):self.call('delete_tree',path='')
+        self.call('delete_tree',path='dest');self.assertFalse((self.root/'dest').exists())
+    def test_extract_current_folder_preserve_and_replace(self):
+        (self.root/'keep.txt').write_text('original')
+        with zipfile.ZipFile(self.root/'site.zip','w') as z:
+            z.writestr('keep.txt','updated');z.writestr('assets/a.txt','a');z.writestr('assets/b.txt','b')
+        result=self.call('unzip',path='site.zip',target='')
+        self.assertEqual(result['skipped'],1);self.assertEqual((self.root/'keep.txt').read_text(),'original')
+        self.assertEqual((self.root/'assets/b.txt').read_text(),'b')
+        self.call('unzip',path='site.zip',target='',overwrite=True)
+        self.assertEqual((self.root/'keep.txt').read_text(),'updated')
+        with zipfile.ZipFile(self.root/'bad.zip','w') as z:z.writestr('new.txt','no');z.writestr('../outside','no')
+        with self.assertRaises(Rejected):self.call('unzip',path='bad.zip',target='')
+        self.assertFalse((self.root/'new.txt').exists())
+    def test_missing_trash_does_not_create_orphan(self):
+        with self.assertRaises(Rejected):self.call('trash',path='missing')
+        self.assertEqual(list((self.private/'trash').iterdir()),[])
+    def test_large_block_retry_integrity(self):
+        raw=os.urandom(8*1024*1024)
+        token=self.call('upload_begin',path='fast.bin',size=len(raw)+3)['id']
+        data=base64.b64encode(raw).decode()
+        self.assertEqual(self.call('upload_chunk',id=token,offset=0,content=data)['offset'],len(raw))
+        self.assertEqual(self.call('upload_chunk',id=token,offset=0,content=data)['offset'],len(raw))
+        with self.assertRaises(Rejected):self.call('upload_chunk',id=token,offset=0,content='YmFk')
+        with self.assertRaises(Rejected):self.call('upload_chunk',id=token,offset=len(raw),content='')
+        with self.assertRaises(Rejected):self.call('upload_chunk',id=token,offset=len(raw),content=base64.b64encode(raw+b'x').decode())
+        self.call('upload_chunk',id=token,offset=len(raw),content='ZW5k')
+        self.call('upload_finish',id=token)
+        self.assertEqual(hashlib.sha256((self.root/'fast.bin').read_bytes()).digest(),hashlib.sha256(raw+b'end').digest())
     def test_large_zip_transfer_copy_extract(self):
         # A real ZIP above the previous 100 MiB limit; no allocation of the whole file.
         source=Path(self.tmp.name)/'source.zip'

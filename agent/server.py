@@ -75,7 +75,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.path != '/v1/execute':
                 self.respond(404, {'error': 'Not found'}); return
             length = int(self.headers.get('Content-Length', '0'))
-            if length < 1 or length > 2097152:
+            if length < 1 or length > 12582912:
                 raise Rejected('Invalid body size')
             body = self.rfile.read(length)
             self.server.agent.authenticate(self.headers, body)

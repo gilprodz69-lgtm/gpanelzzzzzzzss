@@ -1,6 +1,7 @@
 import {api,esc,date} from './api.js';
 import {icon} from './icons.js';
 import {openFileEditor} from './file-editor.js';
+import {uploadFile} from './upload.js';
 const sizes=n=>n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(1)} MB`;
 const labels={edit:'Editar',rename:'Renomear',copy:'Copiar',move:'Mover',trash:'Mover para lixeira',download:'Baixar',info:'Informações',chmod:'Permissões',zip:'Compactar',unzip:'Extrair ZIP',restore:'Restaurar',purge:'Excluir definitivamente'};
 const fileType=r=>r.directory?'Pasta':/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(r.name)?'Imagem':/\.php$/i.test(r.name)?'Arquivo PHP':/\.zip$/i.test(r.name)?'Arquivo ZIP':/\.xml$/i.test(r.name)?'Arquivo XML':'Arquivo';
@@ -76,9 +77,10 @@ export function bindFileManager({showModal,modal,formShell,bindForm,toast}){
  }
  function progress(text){$('#fm-progress').hidden=!text;$('#fm-progress').textContent=text;}
  async function upload(list){if(bin||landing)throw new Error('Entre na pasta public_html do site para enviar arquivos.');if(!$('#fm-site').value)throw new Error('Selecione um site.');if(busy)throw new Error('Aguarde a transferência atual.');busy=true;$('#fm-site').disabled=true;
-  try{for(const file of list){let id;try{({id}=await request('upload_begin',{path:join(file.name),size:file.size}));for(let offset=0;offset<file.size;offset+=1048576){const data=await file.slice(offset,offset+1048576).arrayBuffer();let text='';const bytes=new Uint8Array(data);for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));await request('upload_chunk',{id,offset,content:btoa(text)});progress(`Enviando ${file.name}: ${Math.round(Math.min(offset+1048576,file.size)/file.size*100)}%`);}await request('upload_finish',{id});}catch(e){if(id)await request('upload_cancel',{id}).catch(()=>{});throw e;}}toast('Upload concluído.');}finally{busy=false;$('#fm-site').disabled=false;progress('');await refresh();}
+  try{const site=+$('#fm-site').value;for(const file of list){progress(`Preparando ${file.name}…`);await uploadFile({file,path:join(file.name),site,request,onProgress:(sent,total,seconds)=>progress(`Enviando ${file.name}: ${Math.round(sent/total*100)}% · ${sizes(sent)} / ${sizes(total)} · ${sizes(Math.round(sent/Math.max(seconds,.1)))}/s`)});}toast('Upload concluído.');}finally{busy=false;$('#fm-site').disabled=false;progress('');await refresh();}
  }
  async function action(name){
+  if(bin&&name==='trash')name='purge';
   $('#fm-context').hidden=true;if(busy)throw new Error('Aguarde a transferência atual.');
   if(name==='grid'||name==='list'){grid=name==='grid';draw();return;}
   if(name==='select'||name==='invert'){const visible=visibleRows(),all=visible.every(r=>selected.has(bin?r.id:r.name));for(const r of visible){const key=bin?r.id:r.name;if(name==='invert'?selected.has(key):all)selected.delete(key);else selected.add(key);}draw();return;}
@@ -94,9 +96,33 @@ export function bindFileManager({showModal,modal,formShell,bindForm,toast}){
   if(name==='home'){path='';bin=false;await refresh();return;}if(name==='bin'){bin=true;await refresh();return;}if(name==='refresh'){await refresh();return;}
   if(name==='upload'){$('#fm-upload').click();return;}
   if(['new','folder'].includes(name)){if(bin)throw new Error('Abra uma pasta primeiro.');prompt(name==='new'?'Novo arquivo':'Nova pasta',input('name','Nome'),async v=>{if(!v.name||/[\\/]/.test(v.name)||['.','..'].includes(v.name))throw new Error('Nome inválido.');await request(name==='new'?'upload_begin':'mkdir',name==='new'?{path:join(v.name),size:0}:{path:join(v.name)}).then(async r=>{if(name==='new')await request('upload_finish',{id:r.id});});},'Criar');return;}
-  if(['trash','restore','purge'].includes(name)){if(!selected.size)throw new Error('Selecione pelo menos um item.');const items=keys();prompt(labels[name],`<p>${name==='purge'?'Excluir definitivamente':'Confirmar operação em'} ${items.length} item(ns)?</p>`,async()=>{for(const r of items)await request(name,bin?{id:r.id}:{path:join(r.name)});},'Confirmar');return;}
+  if(['trash','restore','purge'].includes(name)){if(!selected.size)throw new Error('Selecione pelo menos um item.');const items=keys(),fromBin=bin;
+   prompt(name==='trash'?'Excluir arquivos':labels[name],`<p>${name==='purge'?'Excluir definitivamente':'Confirmar operação em'} ${items.length} item(ns)?</p>${name==='trash'?'<label class="check-label"><input type="checkbox" name="permanent">Excluir permanentemente (sem enviar à lixeira)</label><p class="helper">Desmarcada: os itens poderão ser restaurados pela lixeira.</p>':''}`,async v=>{
+    busy=true;$('#fm-site').disabled=true;
+    try{for(const r of items)await request(name==='trash'&&v.permanent==='on'?'delete_tree':name,fromBin?{id:r.id}:{path:join(r.name)});}
+    finally{busy=false;$('#fm-site').disabled=false;}
+   },'Confirmar');return;
+  }
   if(name==='download'){if(!selected.size)throw new Error('Selecione arquivos para baixar.');busy=true;try{for(const r of keys())await download(r);}finally{busy=false;progress('');}return;}
+  if(name==='copy'||name==='move'){
+   if(bin)throw new Error('Restaure os itens antes de transferir.');
+   const items=keys();if(!items.length)throw new Error('Selecione arquivos ou pastas.');
+   const paths=items.map(r=>join(r.name)),parent=path.split('/').slice(0,-1).join('/');
+   prompt(labels[name],`<p>${items.length} item(ns) selecionado(s). Nomes já existentes no destino serão informados antes da transferência.</p><label>Pasta de destino relativa a public_html<input class="input" name="target" value="${esc(parent)}" placeholder="Vazio = public_html"></label><p class="helper">Deixe vazio para enviar diretamente para public_html.</p>`,async v=>{
+    busy=true;$('#fm-site').disabled=true;progress(`${labels[name]}: ${items.length} item(ns)…`);
+    try{const result=await request(name==='copy'?'copy_many':'move_many',{paths,target:v.target.trim()});if(result.failed)throw new Error(`${result.completed.length} concluído(s). ${result.message}`);toast(result.message);}
+    finally{busy=false;$('#fm-site').disabled=false;progress('');}
+   },name==='copy'?'Copiar':'Mover');return;
+  }
   const r=single(),source=join(r.name);
+  if(name==='unzip'){
+   if(r.directory||bin)throw new Error('Selecione um arquivo ZIP.');
+   prompt('Descompactar ZIP',`<p>Extrair <strong>${esc(r.name)}</strong> na pasta atual ou em outro destino.</p><label>Pasta de destino relativa a public_html<input class="input" name="target" value="${esc(path)}" placeholder="Vazio = public_html"></label><label class="check-label"><input type="checkbox" name="overwrite">Substituir arquivos existentes</label><p class="helper">Deixe o destino vazio para extrair diretamente em public_html. Arquivos existentes são preservados por padrão.</p>`,async v=>{
+    busy=true;$('#fm-site').disabled=true;progress(`Descompactando ${r.name}…`);
+    try{const result=await request('unzip',{path:source,target:v.target.trim(),overwrite:v.overwrite==='on'});toast(result.message);}
+    finally{busy=false;$('#fm-site').disabled=false;progress('');}
+   },'Descompactar');return;
+  }
   if(name==='open'){if(r.directory){path=source;await refresh();return;}name='edit';}
   if(name==='edit'){
    if(r.directory)throw new Error('Selecione um arquivo de texto.');

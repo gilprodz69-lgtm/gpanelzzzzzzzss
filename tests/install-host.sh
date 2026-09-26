@@ -30,6 +30,7 @@ credentials_before=$(sha256sum /root/vpsmanager-access.txt)
 curl -ksSf https://127.0.0.1:8443/ >/dev/null
 curl -ksSf https://127.0.0.1:8443/phpmyadmin/ | grep -q phpMyAdmin
 python3 tests/linux-host.py
+php8.3 tests/upload-http.php
 printf 'preserve-existing-data\n' > /srv/vpsmanager/update-preservation.txt
 old_release=$(readlink -f /opt/vpsmanager/current)
 printf 'obsolete\n' > "$old_release/obsolete-release-file.txt"

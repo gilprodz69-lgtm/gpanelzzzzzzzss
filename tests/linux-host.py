@@ -69,6 +69,17 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
             for item in ops.files({**files,'action':'trash_list'})['data']:
                 ops.files({**files,'action':'purge','id':item['id']})
             print('PASS 101 MiB ZIP upload and extraction under isolated site user, integrity and web group',flush=True)
+            ops.files({**files,'action':'mkdir','path':'batch'})
+            ops.files({**files,'action':'copy_many','paths':['uploaded.txt','web-folder'],'target':'batch'})
+            assert fetch(p['domain'],'/batch/web-folder/').endswith(b'readable-by-nginx')
+            ops.files({**files,'action':'mkdir','path':'moved'})
+            ops.files({**files,'action':'move_many','paths':['batch/uploaded.txt','batch/web-folder'],'target':'moved'})
+            ops.files({**files,'action':'zip','path':'moved','target':'direct.zip'})
+            ops.files({**files,'action':'delete_tree','path':'moved'})
+            ops.files({**files,'action':'unzip','path':'direct.zip','target':''})
+            assert fetch(p['domain'],'/moved/web-folder/').endswith(b'readable-by-nginx')
+            ops.files({**files,'action':'delete_tree','path':'moved'})
+            print('PASS bulk copy/move, direct ZIP extraction and permanent folder deletion',flush=True)
         ops.files({**files,'action':'trash','path':'uploaded.txt'})
         item=ops.files({**files,'action':'trash_list'})['data'][0]
         ops.files({**files,'action':'restore','id':item['id']})

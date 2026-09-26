@@ -10,6 +10,13 @@ const sites=[{id:901,name:'loja.example.test',status:'active',config:{php_versio
 await page.route('**/api/v1/websites',r=>r.fulfill({json:{data:sites}}));
 await page.route('**/api/v1/websites/901',r=>r.fulfill({json:{data:sites[0]}}));
 let requests=[],offset=0,declared=0,finished=false;
+await page.route('**/api/v1/files/upload-chunk',async route=>{
+ const h=route.request().headers(),bytes=route.request().postDataBuffer();
+ assert.equal(h['content-type'],'application/octet-stream');assert(bytes.length<=8*1048576);
+ const body={action:'upload_chunk',website_id:Number(h['x-upload-site']),offset:Number(h['x-upload-offset']),id:h['x-upload-id']};
+ requests.push({action:body.action,site:body.website_id});assert.equal(body.website_id,902);assert.equal(body.offset,offset);offset+=bytes.length;
+ await route.fulfill({json:{offset:body.offset+bytes.length}});
+});
 await page.route('**/api/v1/files',async route=>{
  const p=route.request().postDataJSON();requests.push({action:p.action,site:p.website_id,path:p.path});let result={};
  if(p.action==='list')result={data:[{name:'index.php',size:30,directory:false,mode:'640'}]};
@@ -20,7 +27,7 @@ await page.route('**/api/v1/files',async route=>{
  await route.fulfill({json:result});
 });
 const password=(await readFile('storage/LOCAL-ACCESS.txt','utf8')).match(/Senha: (.+)/)[1].trim();
-await page.goto('http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
+await page.goto(process.env.VPM_TEST_URL||'http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
 await page.locator('nav [data-route=websites]').click();
 await page.getByRole('link',{name:'Gerenciar arquivos',exact:true}).first().click();await page.locator('.fm-site-home h2').waitFor();
 assert.equal(await page.locator('.fm-site-home h2').textContent(),sites[0].name);assert.equal(requests.length,0);
@@ -37,7 +44,7 @@ const temp=await mkdtemp(join(tmpdir(),'vpm-upload-'));
 try{
  const file=join(temp,'large.zip'),handle=await open(file,'w');await handle.truncate(101*1024*1024+3);await handle.close();
  await page.locator('#fm-upload').setInputFiles(file);await page.getByText('Upload concluído.',{exact:true}).waitFor({timeout:90000});
- assert(finished);assert.equal(offset,101*1024*1024+3);assert.equal(requests.filter(r=>r.action==='upload_chunk').length,102);
+ assert(finished);assert.equal(offset,101*1024*1024+3);assert.equal(requests.filter(r=>r.action==='upload_chunk').length,13);
 }finally{await rm(temp,{recursive:true,force:true});}
 await page.locator('#fm-breadcrumbs [data-fm=home]').click();await page.locator('#fm-breadcrumbs [data-fm=sites]').click();await page.locator('[data-site="901"]').waitFor();
 for(const [width,height] of [[1366,768],[390,844]]){await page.setViewportSize({width,height});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);}

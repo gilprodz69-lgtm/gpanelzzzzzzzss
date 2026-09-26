@@ -12,6 +12,7 @@ from pathlib import Path
 from validation import inside, choice, Rejected
 
 MAX_FILE = 1024 * 1024
+MAX_UPLOAD_CHUNK = 8 * 1024 * 1024
 
 
 def bounded_tree(path):
@@ -25,7 +26,9 @@ def bounded_tree(path):
     return entries
 
 def operate(root, payload, private=None):
-    action = choice(payload.get('action'), ['list', 'read', 'write', 'mkdir', 'delete', 'rename', 'copy', 'zip', 'unzip', 'chmod', 'trash', 'trash_list', 'restore', 'purge', 'download', 'upload_begin', 'upload_chunk', 'upload_finish', 'upload_cancel', 'info'])
+    action = choice(payload.get('action'), ['list', 'read', 'write', 'mkdir', 'delete', 'delete_tree', 'rename', 'copy', 'copy_many', 'move_many', 'zip', 'unzip', 'chmod', 'trash', 'trash_list', 'restore', 'purge', 'download', 'upload_begin', 'upload_chunk', 'upload_finish', 'upload_cancel', 'info'])
+    if action in ['copy_many', 'move_many']:
+        return transfer_many(root, payload)
     if action in ['trash', 'trash_list', 'restore', 'purge', 'upload_begin', 'upload_chunk', 'upload_finish', 'upload_cancel']:
         if private is None:
             raise Rejected('Private file storage unavailable')
@@ -45,11 +48,15 @@ def operate(root, payload, private=None):
             return {'data': sorted(rows, key=lambda item: item['deleted_at'], reverse=True)}
         if action == 'trash':
             path = inside(root, payload.get('path', ''))
+            if not path.exists():raise Rejected('Item não encontrado. Atualize a lista de arquivos.')
             token = uuid.uuid4().hex
             bounded_tree(path)
             metadata = {'name': path.name, 'path': str(path.relative_to(root)), 'directory': path.is_dir(), 'deleted_at': int(time.time())}
             (directory / (token + '.json')).write_text(json.dumps(metadata))
-            path.rename(directory / token)
+            try:path.rename(directory / token)
+            except OSError:
+                (directory / (token + '.json')).unlink(missing_ok=True)
+                raise
         else:
             token = transfer_id(payload.get('id'))
             item = directory / token
@@ -105,6 +112,9 @@ def operate(root, payload, private=None):
             out.write(content)
     elif action == 'mkdir':
         path.mkdir(mode=0o750)
+    elif action == 'delete_tree':
+        bounded_tree(path)
+        shutil.rmtree(path) if path.is_dir() else path.unlink()
     elif action == 'delete':
         if path.is_dir():
             path.rmdir()  # Nonempty directory removal requires explicit child operations.
@@ -140,29 +150,79 @@ def operate(root, payload, private=None):
                 if entry.is_file() or entry.is_dir():
                     archive.write(entry, str(entry.relative_to(path.parent)))
     elif action == 'unzip':
-        target = inside(root, payload.get('target', ''))
-        if target.exists():
-            raise Rejected('Extract into a new directory')
-        with zipfile.ZipFile(path) as archive:
-            members = archive.infolist()
-            if sum(m.file_size for m in members) > shutil.disk_usage(target.parent).free:
-                raise Rejected('Espaço livre insuficiente para descompactar o ZIP')
-            for member in members:
-                inside(target, member.filename)
-                mode = member.external_attr >> 16
-                if stat.S_ISLNK(mode) or (stat.S_IFMT(mode) and not (stat.S_ISREG(mode) or stat.S_ISDIR(mode))):
-                    raise Rejected('Unsafe archive entry')
-            target.mkdir(mode=0o750)
-            for member in members:
-                destination = inside(target, member.filename)
-                if member.is_dir():
-                    destination.mkdir(mode=0o750, parents=True, exist_ok=True)
-                else:
-                    destination.parent.mkdir(mode=0o750, parents=True, exist_ok=True)
-                    with archive.open(member) as src, open(destination, 'xb') as dst:
-                        shutil.copyfileobj(src, dst)
-                    destination.chmod(0o640)
+        return extract_archive(root,path,payload)
     return {'message': 'Operation completed'}
+
+
+def transfer_many(root, payload):
+    names=payload.get('paths')
+    if not isinstance(names,list) or not names or len(names)>1000 or any(not isinstance(n,str) for n in names):
+        raise Rejected('Selecione os arquivos e pastas para transferir')
+    destination=inside(root,payload.get('target',''),allow_root=True)
+    if not destination.is_dir():raise Rejected('A pasta de destino não existe')
+    sources=[inside(root,n) for n in names]
+    if len(set(sources))!=len(sources):raise Rejected('Seleção duplicada')
+    targets=[]
+    for source in sources:
+        target=inside(root,(destination/source.name).relative_to(root).as_posix())
+        if not source.exists() or target.exists() or target in targets:raise Rejected('Origem ausente ou nome já existente no destino: '+source.name)
+        if destination.is_relative_to(source) or any(source!=other and source.is_relative_to(other) for other in sources):raise Rejected('Destino ou seleção contém uma pasta de origem')
+        bounded_tree(source);targets.append(target)
+    completed=[]
+    for source,target in zip(sources,targets):
+        try:
+            if payload['action']=='move_many':source.rename(target)
+            elif source.is_dir():shutil.copytree(source,target,symlinks=True)
+            else:shutil.copyfile(source,target,follow_symlinks=False);target.chmod(0o640)
+            completed.append(source.name)
+        except OSError as exc:
+            return {'completed':completed,'failed':source.name,'message':'Transferência interrompida: '+str(exc)[:180]}
+    return {'completed':completed,'message':f'{len(completed)} item(ns) transferido(s).'}
+
+
+def extract_archive(root,path,payload):
+    import tempfile
+    target=inside(root,payload.get('target',''),allow_root=True)
+    overwrite=payload.get('overwrite',False)
+    if type(overwrite) is not bool:raise Rejected('Invalid overwrite option')
+    if target.exists() and not target.is_dir():raise Rejected('O destino deve ser uma pasta')
+    # Validate all entries before writing. Reuse the resolved paths and create each
+    # directory once, instead of resolving and mkdir-ing every ancestor per file.
+    with zipfile.ZipFile(path) as archive:
+        plan=[];seen=set();files=set();directories={target};skipped=0
+        for member in archive.infolist():
+            destination=inside(target,member.filename,allow_root=member.is_dir())
+            mode=member.external_attr>>16
+            if stat.S_ISLNK(mode) or (stat.S_IFMT(mode) and not(stat.S_ISREG(mode) or stat.S_ISDIR(mode))):raise Rejected('Unsafe archive entry')
+            if destination==path:raise Rejected('O ZIP não pode substituir a si mesmo')
+            if destination in seen and not member.is_dir():raise Rejected('Duplicate archive entry')
+            seen.add(destination)
+            if member.is_dir():directories.add(destination)
+            else:
+                files.add(destination)
+                if destination.exists():
+                    if not destination.is_file():raise Rejected('Arquivo conflita com uma pasta existente')
+                    if not overwrite:skipped+=1;continue
+                plan.append((member,destination))
+            parent=destination.parent
+            while parent.is_relative_to(target):directories.add(parent);parent=parent.parent
+        if files&directories:raise Rejected('Archive file/directory conflict')
+        for directory in directories:
+            if directory.exists() and not directory.is_dir():raise Rejected('Pasta conflita com um arquivo existente')
+        disk=target
+        while not disk.exists():disk=disk.parent
+        if sum(m.file_size for m,_ in plan)>shutil.disk_usage(disk).free:raise Rejected('Espaço livre insuficiente para descompactar o ZIP')
+        for directory in sorted(directories,key=lambda d:len(d.parts)):directory.mkdir(mode=0o750,parents=True,exist_ok=True)
+        for member,destination in plan:
+            fd,temp=tempfile.mkstemp(prefix='.vpm-extract-',dir=destination.parent)
+            try:
+                with os.fdopen(fd,'wb') as dst,archive.open(member) as src:shutil.copyfileobj(src,dst,1024*1024)
+                os.chmod(temp,0o640)
+                if overwrite:os.replace(temp,destination)
+                else:os.link(temp,destination)
+            finally:
+                if os.path.exists(temp):os.unlink(temp)
+    return {'message':f'{len(plan)} arquivo(s) extraído(s); {skipped} existente(s) preservado(s).','extracted':len(plan),'skipped':skipped}
 
 def transfer_id(value):
     import re
@@ -198,7 +258,17 @@ def upload(root, private, payload):
     metadata = json.loads(metadata_path.read_text())
     if action == 'upload_chunk':
         content = base64.b64decode(payload.get('content', ''), validate=True)
-        if type(payload.get('offset')) is not int or payload['offset'] != data_path.stat().st_size or len(content) > MAX_FILE or data_path.stat().st_size + len(content) > metadata['size']:
+        offset=payload.get('offset')
+        # A lost HTTP response may cause the same block to be sent again.
+        # Accept only an exact match, never append or overwrite a duplicate.
+        if type(offset) is int and 0 <= offset < data_path.stat().st_size and 0 < len(content) <= MAX_UPLOAD_CHUNK and offset+len(content) <= data_path.stat().st_size:
+            with open(data_path,'rb') as source:
+                source.seek(offset)
+                if source.read(len(content)) == content:
+                    os.utime(metadata_path,None)
+                    return {'offset':offset+len(content)}
+            raise Rejected('Upload retry does not match stored data')
+        if type(payload.get('offset')) is not int or payload['offset'] != data_path.stat().st_size or not content or len(content) > MAX_UPLOAD_CHUNK or data_path.stat().st_size + len(content) > metadata['size']:
             raise Rejected('Invalid upload offset or size')
         with open(data_path, 'ab') as out:
             out.write(content)

@@ -138,6 +138,7 @@ if [[ $is_domain -eq 0 ]]; then
     http_host=_
     if [[ $(readlink -f /etc/nginx/sites-enabled/default 2>/dev/null) == /etc/nginx/sites-available/default ]]; then rm -- /etc/nginx/sites-enabled/default; fi
 fi
+install -m 0644 "$project_dir/deploy/nginx-upload.conf" /etc/nginx/snippets/vpm-upload.conf
 cat > /etc/nginx/conf.d/vpsmanager-panel.conf <<EOF
 server {
     listen $PANEL_PORT ssl;
@@ -148,6 +149,7 @@ server {
     root /opt/vpsmanager/current/public;
     index index.php;
     client_max_body_size 2m;
+    include /etc/nginx/snippets/vpm-upload.conf;
     include /etc/nginx/snippets/vpm-phpmyadmin.conf;
     location / { try_files \$uri /index.php?\$query_string; }
     location = /index.php {

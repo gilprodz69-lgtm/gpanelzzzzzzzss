@@ -14,15 +14,25 @@ if(!str_starts_with($path,'/api/v1/')) { require BASE_PATH.'/resources/views/app
 header('Content-Type: application/json; charset=utf-8');
 try {
     $method=$_SERVER['REQUEST_METHOD'];
-    if((int)($_SERVER['CONTENT_LENGTH']??0)>2097152) throw new App\Helpers\HttpError(413,'Requisição excede 2 MB.');
+    $binaryUpload=$path==='/api/v1/files/upload-chunk' && $method==='POST';
+    $bodyLimit=$binaryUpload?8388608:2097152;
+    if((int)($_SERVER['CONTENT_LENGTH']??0)>$bodyLimit) throw new App\Helpers\HttpError(413,'Bloco de dados excede o tamanho permitido.');
     if(isset($_SERVER['HTTP_ORIGIN'])) {
         $expected=rtrim(getenv('APP_URL')?:'http://127.0.0.1:8080','/');
         if($_SERVER['HTTP_ORIGIN']!==$expected) throw new App\Helpers\HttpError(403,'Origem não autorizada.');
     }
-    $raw=file_get_contents('php://input',false,null,0,2097153);
-    if(strlen($raw)>2097152) throw new App\Helpers\HttpError(413,'Requisição excede 2 MB.');
+    $raw=file_get_contents('php://input',false,null,0,$bodyLimit+1);
+    if(strlen($raw)>$bodyLimit) throw new App\Helpers\HttpError(413,'Bloco de dados excede o tamanho permitido.');
     $data=[];
-    if($raw!=='') {
+    if($binaryUpload) {
+        if(($_SERVER['CONTENT_TYPE']??'')!=='application/octet-stream') throw new App\Helpers\HttpError(415,'Envie um bloco binário.');
+        $offset=filter_var($_SERVER['HTTP_X_UPLOAD_OFFSET']??'',FILTER_VALIDATE_INT,['options'=>['min_range'=>0]]);
+        $site=filter_var($_SERVER['HTTP_X_UPLOAD_SITE']??'',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+        $id=$_SERVER['HTTP_X_UPLOAD_ID']??'';
+        if($offset===false||$site===false||!preg_match('/^[a-f0-9]{32}$/D',$id)||$raw==='') throw new App\Helpers\HttpError(422,'Bloco de upload inválido.');
+        $data=['action'=>'upload_chunk','website_id'=>$site,'id'=>$id,'offset'=>$offset,'content'=>base64_encode($raw)];
+        $path='/api/v1/files';
+    } elseif($raw!=='') {
         if(!str_starts_with($_SERVER['CONTENT_TYPE']??'','application/json')) throw new App\Helpers\HttpError(415,'Envie application/json.');
         $data=json_decode($raw,true,32,JSON_THROW_ON_ERROR); if(!is_array($data)||array_is_list($data)&&$data!==[]) throw new App\Helpers\HttpError(422,'Envie um objeto JSON.');
     }
