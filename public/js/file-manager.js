@@ -70,6 +70,18 @@ export function bindFileManager({showModal,modal,formShell,bindForm,toast}){
  function single(){const entries=keys();if(entries.length!==1)throw new Error('Selecione um único item para esta operação.');return entries[0];}
  function prompt(title,body,handler,submit='Salvar'){showModal(title,formShell(body,submit));bindForm(modal.querySelector('form'),async f=>{await handler(Object.fromEntries(new FormData(f)));modal.close();await refresh();});}
  const input=(name,label,value='')=>`<label>${label}<input class="input" name="${name}" value="${esc(value)}" required></label>`;
+ function directoryPicker(initial){
+  const form=modal.querySelector('form'),input=form.elements.target,box=document.createElement('div');box.className='fm-directory-picker';input.value=initial;
+  input.closest('label').after(box);let cursor=initial,ticket=0;
+  async function open(dir){const own=++ticket;box.textContent='Carregando pastas…';
+   try{const result=await request('list',{path:dir});if(own!==ticket||!box.isConnected)return;cursor=dir;
+    box.innerHTML=`<p><strong>${esc(siteName())} / public_html${dir?'/'+esc(dir):''}</strong></p><div class="fm-picker-actions"><button type="button" class="button small" data-picker-root>public_html</button>${dir?'<button type="button" class="button small" data-picker-up>Subir uma pasta</button>':''}<button type="button" class="button primary small" data-picker-use>Extrair nesta pasta</button></div><div class="fm-picker-folders">${result.data.filter(r=>r.directory).map(r=>`<button type="button" class="button small" data-picker-folder="${esc(r.name)}">${icon('files')}${esc(r.name)}</button>`).join('')||'<p class="helper">Nenhuma subpasta.</p>'}</div>`;
+   }catch(error){if(own===ticket)box.textContent=error.message;}
+  }
+  box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+   if(b.hasAttribute('data-picker-root'))open('');else if(b.hasAttribute('data-picker-up'))open(cursor.split('/').slice(0,-1).join('/'));else if(b.hasAttribute('data-picker-use')){input.value=cursor;input.focus();}else if(b.dataset.pickerFolder)open([cursor,b.dataset.pickerFolder].filter(Boolean).join('/'));
+  });open(initial);
+ }
  async function download(r){
   if(r.directory)throw new Error('Compacte a pasta antes de baixar.');const chunks=[];let offset=0,stamp=null,total;
   do{const result=await request('download',{path:join(r.name),offset});if(stamp!==null&&(result.modified!==stamp||result.size!==total))throw new Error('O arquivo mudou durante o download. Tente novamente.');stamp=result.modified;total=result.size;const bytes=Uint8Array.from(atob(result.content),c=>c.charCodeAt(0));chunks.push(bytes);offset+=bytes.length;if(!bytes.length&&offset<total)throw new Error('Download incompleto.');progress(`Baixando ${r.name}: ${sizes(offset)} / ${sizes(total)}`);}while(offset<total);
@@ -121,7 +133,7 @@ export function bindFileManager({showModal,modal,formShell,bindForm,toast}){
     busy=true;$('#fm-site').disabled=true;progress(`Descompactando ${r.name}…`);
     try{const result=await request('unzip',{path:source,target:v.target.trim(),overwrite:v.overwrite==='on'});toast(result.message);}
     finally{busy=false;$('#fm-site').disabled=false;progress('');}
-   },'Descompactar');return;
+   },'Descompactar');directoryPicker(path);return;
   }
   if(name==='open'){if(r.directory){path=source;await refresh();return;}name='edit';}
   if(name==='edit'){

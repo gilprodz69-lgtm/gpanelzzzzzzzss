@@ -26,3 +26,5 @@
 .fm-site-picker { min-width: 230px; }
 #fm-current-path { overflow-wrap: anywhere; }
 @media(max-width:650px){.fm-sites{grid-template-columns:1fr}.fm-site-home{padding:20px 6px}.fm-site-picker{min-width:0}}
+
+.fm-directory-picker{border:1px solid var(--border);padding:12px;border-radius:10px;margin:12px 0}.fm-picker-actions,.fm-picker-folders{display:flex;flex-wrap:wrap;gap:8px}.fm-picker-folders{max-height:180px;overflow:auto;margin-top:12px}.fm-directory-picker p{overflow-wrap:anywhere}

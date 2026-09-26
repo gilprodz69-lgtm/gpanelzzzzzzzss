@@ -1,5 +1,5 @@
 {
-  "version": "0.2.11-preview",
+  "version": "0.2.12-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 15,
-      "sha256": "d4febaf2e26c8dd42bce3a37aa9b335e3f203a093a7028401b7ee98a7c8b8f83"
+      "sha256": "0def30b66ffed4556ae3fc141a57dc5a475e661c5229f95950ef42e9b7656bcf"
     },
     {
       "path": "agent/files.py",
@@ -28,13 +28,13 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 34760,
-      "sha256": "a45f1794ba8d06db27b8d0e758ce0fb9f0f56cb46ba6eea097771932d0909f6d"
+      "bytes": 36614,
+      "sha256": "21eedbe32a2b869478f5e65191f7af56910b93aec543eb9e8cdc8b03508bfbf3"
     },
     {
       "path": "agent/runtime.py",
-      "bytes": 3620,
-      "sha256": "be04e442f74aa5acbc898355851264cd0f0cdbf98b1860fe42f47e802f7d065d"
+      "bytes": 3687,
+      "sha256": "102b23551bc66ba070a18497f876aaf5fa28e343401a81744d43ff6aa46a047e"
     },
     {
       "path": "agent/server.py",
@@ -318,8 +318,8 @@
     },
     {
       "path": "public/css/file-manager.css",
-      "bytes": 10856,
-      "sha256": "b9c0d3dc3ae9b7639d34c3285b83d8b47526acd2194b17f511fd8cf493d8becf"
+      "bytes": 11142,
+      "sha256": "3de4b7df7da2da3c68670fc25762b3a36568be96952af24723b2ecfd92b75039"
     },
     {
       "path": "public/css/hosting.css",
@@ -378,8 +378,8 @@
     },
     {
       "path": "public/js/file-manager.js",
-      "bytes": 25829,
-      "sha256": "e00eb33ee8aa53bdec76e9174ef6a2ffe98a3e2d96e41960a93e49369045a483"
+      "bytes": 27450,
+      "sha256": "a4715a0b5988552b9fa83992589cd109283c3d256e1cd5ba849557c39f72c9a9"
     },
     {
       "path": "public/js/forms.js",
@@ -555,6 +555,11 @@
       "path": "scripts/register-local-server.php",
       "bytes": 1087,
       "sha256": "03144e1f95a4e92dc3f20ec5d12e32dc9e5142628399cb35a1a7db355f7a5c5b"
+    },
+    {
+      "path": "scripts/repair-php-runtime.py",
+      "bytes": 734,
+      "sha256": "abec5819a517381e9b093ab2cb5c14723d75a25a4bd9732eda366af55212a06a"
     },
     {
       "path": "scripts/update.sh",

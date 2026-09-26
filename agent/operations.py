@@ -15,6 +15,44 @@ import tls
 PHP_VERSIONS = ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
 
 
+def prepare_site_runtime(home, username):
+    import pwd
+    account=pwd.getpwnam(username)
+    runtime=Path(home)/'.php-runtime'
+    for path in [runtime,runtime/'tmp',runtime/'sessions']:
+        if path.is_symlink():raise Rejected('Unsafe PHP runtime directory')
+        path.mkdir(mode=0o700,exist_ok=True)
+        fd=os.open(path,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+        try:os.fchown(fd,account.pw_uid,account.pw_gid);os.fchmod(fd,0o700)
+        finally:os.close(fd)
+    return runtime
+
+
+def repair_site_runtime(site):
+    runtime=prepare_site_runtime(site['home'],site['username'])
+    pool=Path(site['pool']);before=pool.read_text();content=before
+    for key,value in [('upload_tmp_dir',str(runtime/'tmp')),('session.save_path',str(runtime/'sessions'))]:
+        content=re.sub(r'^php_admin_value\['+re.escape(key)+r'\] = .*$',f'php_admin_value[{key}] = {value}',content,flags=re.M)
+    if str(runtime) not in content.split('php_admin_value[open_basedir] = ')[-1].splitlines()[0]:
+        content=re.sub(r'^(php_admin_value\[open_basedir\] = .*)$',lambda m:m[1]+':'+str(runtime),content,flags=re.M)
+    # Preserve existing PHP sessions when migrating the old public temp directory.
+    old=Path(site['public'])/'.tmp'
+    if old.is_dir() and not old.is_symlink():
+        import pwd
+        account=pwd.getpwnam(site['username'])
+        def copy_sessions():
+            for source in old.glob('sess_*'):
+                if source.is_symlink() or not source.is_file():continue
+                target=runtime/'sessions'/source.name
+                if not target.exists():
+                    with source.open('rb') as inp,target.open('xb') as out:shutil.copyfileobj(inp,out)
+                    target.chmod(0o600)
+            return {}
+        unprivileged(account,copy_sessions)
+    if content!=before:atomic_write(pool,content)
+    return content!=before
+
+
 class Operations:
     SERVICES = ['nginx', *[f'php{v}-fpm' for v in PHP_VERSIONS], 'mariadb', 'redis-server', 'docker', 'cron']
     def __init__(self, state='/var/lib/vpsmanager-agent', root='/srv/vpsmanager'):
@@ -117,6 +155,7 @@ class Operations:
         (public / 'index.html').write_text('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Site ativo</title><h1>Seu site está pronto.</h1></html>')
         os.chown(public / 'index.html', account.pw_uid, webgroup)
         (public / 'index.html').chmod(0o640)
+        runtime = prepare_site_runtime(home, username)
         socket = f'/run/php/vpm-{tenant}-{rid}.sock'
         pool_text = f'''[{username}]
 user = {username}
@@ -129,16 +168,15 @@ pm = ondemand
 pm.max_children = 5
 pm.process_idle_timeout = 10s
 security.limit_extensions = .php
-php_admin_value[open_basedir] = {public}:/usr/share/php
-php_admin_value[upload_tmp_dir] = {public}/.tmp
-php_admin_value[session.save_path] = {public}/.tmp
+php_admin_value[open_basedir] = {public}:{runtime}:/usr/share/php
+php_admin_value[upload_tmp_dir] = {runtime}/tmp
+php_admin_value[session.save_path] = {runtime}/sessions
 php_admin_value[memory_limit] = 128M
 php_admin_value[upload_max_filesize] = 16M
 php_admin_value[post_max_size] = 16M
 php_admin_value[max_execution_time] = 60
 php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,popen,pcntl_exec
 '''
-        temp = public / '.tmp'; temp.mkdir(mode=0o700); os.chown(temp, account.pw_uid, account.pw_gid)
         nginx_text = f'''server {{
     listen 80;
     server_name {host};
@@ -404,7 +442,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             wait_socket(new_socket)
             for config, text in configs.items():
                 atomic_write(config, text.replace(f'fastcgi_pass unix:{old_socket};', f'fastcgi_pass unix:{new_socket};'))
-            run(['/usr/sbin/nginx', '-t']); reload_nginx()
+            run(['/usr/sbin/nginx', '-t']); reload_nginx(drain=True)
             old_pool.unlink()
             run(['/usr/bin/systemctl', 'reload', f"php{s['php']}-fpm"])
             for cron_path, content in cron_configs.items():

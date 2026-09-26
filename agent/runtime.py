@@ -49,28 +49,28 @@ def wait_socket(path, timeout=10):
     raise RuntimeError('PHP-FPM pool did not become ready. Inspect the PHP-FPM journal.')
 
 
-def reload_nginx():
+def reload_nginx(drain=False):
     """A successful reload signal is not yet a running configuration generation."""
     run(['/usr/sbin/nginx', '-t'])
     master = Path('/run/nginx.pid').read_text().strip()
     children_file = Path(f'/proc/{master}/task/{master}/children')
     previous = set(children_file.read_text().split())
     run(['/usr/bin/systemctl', 'reload', 'nginx'])
-    deadline = time.monotonic() + 10
+    deadline = time.monotonic() + (65 if drain else 10)
     while time.monotonic() < deadline:
         children = set(children_file.read_text().split())
         old_accepting = False
         for pid in previous & children:
             try:
                 title = Path(f'/proc/{pid}/cmdline').read_bytes()
-                if b'worker process' in title and b'shutting down' not in title:
+                if b'worker process' in title and (drain or b'shutting down' not in title):
                     old_accepting = True
             except FileNotFoundError:
                 pass
         if children - previous and not old_accepting:
             return
         time.sleep(0.1)
-    raise RuntimeError('Nginx did not activate its new configuration within 10 seconds')
+    raise RuntimeError('Nginx did not finish switching connections; previous PHP configuration will be preserved')
 
 
 def unprivileged(user, function):

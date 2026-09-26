@@ -21,11 +21,11 @@ from validation import Rejected
 os.umask(0o077)
 ops=Operations()
 cron_fixtures=[]
-def fetch(host, path='/'):
+def fetch(host, path='/', cookie=''):
     context=ssl.create_default_context(cafile=f'/etc/vpsmanager/tls/{host}/fullchain.pem')
     with socket.create_connection(('127.0.0.1',443),timeout=10) as raw:
         with context.wrap_socket(raw,server_hostname=host) as conn:
-            conn.sendall(f'GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n'.encode())
+            conn.sendall(f'GET {path} HTTP/1.1\r\nHost: {host}\r\nCookie: {cookie}\r\nConnection: close\r\n\r\n'.encode())
             response=http.client.HTTPResponse(conn)
             response.begin()
             result=response.read()
@@ -39,6 +39,11 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         files={**p,'website_id':index}
         ops.files({**files,'action':'write','path':'version.php','content':base64.b64encode(b'<?php echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;').decode()})
         assert fetch(p['domain'],'/version.php').endswith(version.encode())
+        session_code=b'<?php session_start(); $_SESSION["count"]=($_SESSION["count"]??0)+1; echo $_SESSION["count"].":".(is_writable(ini_get("upload_tmp_dir"))?"ok":"bad");'
+        ops.files({**files,'action':'write','path':'session-probe.php','content':base64.b64encode(session_code).decode()})
+        assert fetch(p['domain'],'/session-probe.php',f'PHPSESSID=citest{index}').endswith(b'1:ok')
+        assert fetch(p['domain'],'/session-probe.php',f'PHPSESSID=citest{index}').endswith(b'2:ok')
+        assert '.php-runtime/sessions' in Path(ops.find('site',p)['pool']).read_text()
         token=ops.files({**files,'action':'upload_begin','path':'uploaded.txt','size':5})['id']
         ops.files({**files,'action':'upload_chunk','id':token,'offset':0,'content':'aGVsbG8='})
         ops.files({**files,'action':'upload_finish','id':token})
@@ -127,6 +132,18 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
             try:ops.update_site({**p,'previous_domain':p['domain'],'domain':'alias.example.invalid','php_version':'8.4'})
             except Rejected:pass
             else:raise AssertionError('Duplicate hostname accepted')
+            # Keep an old Nginx worker alive while switching PHP. It must finish
+            # before the previous pool disappears.
+            import concurrent.futures
+            ops.files({**files,'action':'write','path':'slow.php','content':base64.b64encode(b'<?php file_put_contents(__DIR__."/slow-started", "yes"); sleep(3); echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;').decode()})
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                pending=executor.submit(fetch,p['domain'],'/slow.php')
+                marker=Path(original['public'])/'slow-started';deadline=time.monotonic()+10
+                while not marker.exists() and time.monotonic()<deadline:time.sleep(.05)
+                assert marker.exists()
+                ops.change_php({**p,'php_version':'8.4'})
+                assert pending.done() and pending.result().endswith(b'7.4')
+            assert fetch(p['domain'],'/version.php').endswith(b'8.4')
             ops.update_site({**p,'previous_domain':p['domain'],'domain':'edited.example.invalid','php_version':'8.4'})
             p['domain']='edited.example.invalid'
             # Serve a public-IP hostname only through the runner's loopback connection.
