@@ -29,7 +29,7 @@ await page.route('**/api/v1/files',async route=>{
 const password=(await readFile('storage/LOCAL-ACCESS.txt','utf8')).match(/Senha: (.+)/)[1].trim();
 await page.goto(process.env.VPM_TEST_URL||'http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
 await page.locator('nav [data-route=websites]').click();
-await page.getByRole('link',{name:'Gerenciar arquivos',exact:true}).first().click();await page.locator('.fm-site-home h2').waitFor();
+await page.locator('tr').filter({hasText:'loja.example.test'}).getByRole('link',{name:'Gerenciar arquivos',exact:true}).click();await page.locator('.fm-site-home h2').waitFor();
 assert.equal(await page.locator('.fm-site-home h2').textContent(),sites[0].name);assert.equal(requests.length,0);
 assert.equal(await page.locator('.fm-actions [data-fm=upload]').isDisabled(),true);
 await page.screenshot({path:'test-results/site-folder-entry.png',fullPage:true});

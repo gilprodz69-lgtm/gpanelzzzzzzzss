@@ -18,8 +18,8 @@
     },
     {
       "path": "VERSION",
-      "bytes": 16,
-      "sha256": "f226935c83f9ac3a2a2a55edc05e3a3ef9687bf9b42451689fe01dcf24154944"
+      "bytes": 15,
+      "sha256": "d4febaf2e26c8dd42bce3a37aa9b335e3f203a093a7028401b7ee98a7c8b8f83"
     },
     {
       "path": "agent/files.py",
@@ -213,8 +213,8 @@
     },
     {
       "path": "deploy/Dockerfile",
-      "bytes": 580,
-      "sha256": "9704588a1f00e5a61381c84b2c1c68ed589c20c1a02b6be3cf3bdff5087496f3"
+      "bytes": 569,
+      "sha256": "7c8e5cb61e761539e29cc239b38d48cbf5a77c7da73f404d0d373fca2d6b3081"
     },
     {
       "path": "deploy/nginx-container.conf",
