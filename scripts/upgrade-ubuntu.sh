@@ -60,6 +60,7 @@ stage='migração'
 migration_started=1
 php8.3 "$release_dir/scripts/console.php" migrate
 stage='configuração'
+python3 "$release_dir/scripts/repair-php-runtime.py"
 install -m 0644 "$release_dir/deploy/nginx-upload.conf" /etc/nginx/snippets/vpm-upload.conf
 if ! grep -q 'include /etc/nginx/snippets/vpm-upload.conf;' /etc/nginx/conf.d/vpsmanager-panel.conf; then
     sed -i '/client_max_body_size 2m;/a\    include /etc/nginx/snippets/vpm-upload.conf;' /etc/nginx/conf.d/vpsmanager-panel.conf

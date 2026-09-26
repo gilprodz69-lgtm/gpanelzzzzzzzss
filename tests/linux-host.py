@@ -14,7 +14,7 @@ from unittest.mock import patch
 if os.getenv('GITHUB_ACTIONS') != 'true' or os.geteuid() != 0:
     raise SystemExit('Run only on the disposable GitHub Actions runner as root')
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'agent'))
-from operations import Operations, PHP_VERSIONS
+from operations import Operations, PHP_VERSIONS, repair_site_runtime
 from runtime import run
 from validation import Rejected
 # Match the deployed agent service, not the CI shell's more permissive mask.
@@ -44,6 +44,17 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         assert fetch(p['domain'],'/session-probe.php',f'PHPSESSID=citest{index}').endswith(b'1:ok')
         assert fetch(p['domain'],'/session-probe.php',f'PHPSESSID=citest{index}').endswith(b'2:ok')
         assert '.php-runtime/sessions' in Path(ops.find('site',p)['pool']).read_text()
+        if index==1:
+            site=ops.find('site',p);pool=Path(site['pool']);original_pool=pool.read_text()
+            ops.files({**files,'action':'mkdir','path':'.tmp'})
+            ops.files({**files,'action':'write','path':'.tmp/sess_legacy','content':base64.b64encode(b'count|i:42;').decode()})
+            pool.write_text(original_pool.replace(str(Path(site['home'])/'.php-runtime/sessions'),site['public']+'/.tmp').replace(str(Path(site['home'])/'.php-runtime/tmp'),site['public']+'/.tmp'))
+            assert repair_site_runtime(site)
+            assert (Path(site['home'])/'.php-runtime/sessions/sess_legacy').read_text()=='count|i:42;'
+            assert not repair_site_runtime(site)
+            ops.files({**files,'action':'delete_tree','path':'.tmp'})
+            assert fetch(p['domain'],'/session-probe.php','PHPSESSID=citest1').endswith(b'3:ok')
+            print('PASS private PHP sessions persist after public temp deletion and legacy migration',flush=True)
         token=ops.files({**files,'action':'upload_begin','path':'uploaded.txt','size':5})['id']
         ops.files({**files,'action':'upload_chunk','id':token,'offset':0,'content':'aGVsbG8='})
         ops.files({**files,'action':'upload_finish','id':token})

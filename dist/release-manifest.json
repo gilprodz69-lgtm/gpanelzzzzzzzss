@@ -573,8 +573,8 @@
     },
     {
       "path": "scripts/upgrade-ubuntu.sh",
-      "bytes": 6610,
-      "sha256": "c87c48c75c0cb2afc5ce2f454df2f71823b0bac3bf15e7c10c6aeb992ec87d75"
+      "bytes": 6663,
+      "sha256": "0f9afc59147631beb7f1896c76d1b6931b95fde723cb3d4cb2e312945938d17d"
     },
     {
       "path": "scripts/wait-agent.py",
