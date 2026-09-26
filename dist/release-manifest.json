@@ -318,8 +318,8 @@
     },
     {
       "path": "public/css/hosting.css",
-      "bytes": 9164,
-      "sha256": "9c8d3173985116f5f06bfa5c806e3e2e66d9391e80ab72fefbf92ea754eb4529"
+      "bytes": 9249,
+      "sha256": "c30a41f623afacda8f34af2412d49b781ca3a3861e8801ea734b070566758acf"
     },
     {
       "path": "public/css/login.css",
@@ -383,8 +383,8 @@
     },
     {
       "path": "public/js/hosting.js",
-      "bytes": 12648,
-      "sha256": "6d59608d169d25858c91850dfd5f50ff4dc2d1f3fc887a77eec5e0949d098700"
+      "bytes": 13260,
+      "sha256": "582ccccc6d03a25f16b5d99327da87d39c91f3b51ff17ad9228aefedba2df403"
     },
     {
       "path": "public/js/icons.js",

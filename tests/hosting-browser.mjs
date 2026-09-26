@@ -27,7 +27,7 @@ try{
  await page.getByRole('button',{name:'Visualização em grade'}).click();assert.equal(await page.locator('.host-grid').count(),1);
  await page.getByRole('button',{name:'Visualização em lista'}).click();
  await page.getByRole('button',{name:'Métricas do servidor'}).first().click();await page.getByRole('heading',{name:'Métricas do servidor'}).waitFor();assert.match(await page.locator('#modal').textContent(),/12%/);await page.getByRole('button',{name:'Fechar',exact:true}).click();
- await page.getByLabel('Pesquisar nesta lista').fill('site01');await page.screenshot({path:'test-results/sites-redesign.png'});
+ await page.getByLabel('Pesquisar nesta lista').fill('site01');await page.locator('.host-more summary').click(); assert(await page.getByRole('button',{name:'Alterar PHP',exact:true}).evaluate(e=>{const r=e.getBoundingClientRect(); return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}), 'Overflow action must not be clipped'); await page.locator('.host-more summary').click();await page.screenshot({path:'test-results/sites-redesign.png'});
  await page.locator('nav [data-route=domains]').click();await page.locator('[data-hosting=domains] tbody tr').first().waitFor();
  assert.equal(await page.locator('tbody tr').count(),2);await page.getByLabel('Filtrar tipo').selectOption('subdomain');assert.equal(await page.locator('tbody tr').count(),1);
  await page.getByRole('button',{name:'Editar domínio',exact:true}).click();await page.getByRole('heading',{name:'Editar domínio',exact:true}).waitFor();

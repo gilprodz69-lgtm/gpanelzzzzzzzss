@@ -36,6 +36,9 @@ function actions(kind,r,ctx){
 export function bindHosting(){
  const el=document.querySelector('[data-hosting]');if(!el)return;
  const kind=el.dataset.hosting,s=states[kind],site=kind==='websites',ctx=s.ctx,$=q=>el.querySelector(q);
+ function positionMenu(details){const menu=details.querySelector('div'),rect=details.querySelector('summary').getBoundingClientRect();menu.style.left=Math.max(8,Math.min(rect.right-menu.offsetWidth,innerWidth-menu.offsetWidth-8))+'px';menu.style.top=Math.max(8,rect.top-menu.offsetHeight-5)+'px';}
+ el.addEventListener('toggle',e=>{if(!e.target.matches('.host-more')||!e.target.open)return;el.querySelectorAll('.host-more[open]').forEach(d=>{if(d!==e.target)d.open=false;});positionMenu(e.target);},true);
+ el.addEventListener('scroll',()=>el.querySelectorAll('.host-more[open]').forEach(d=>d.open=false),true);
  function draw(){
   const term=s.search.trim().toLocaleLowerCase('pt-BR');
   let rows=s.rows.filter(r=>{const server=ctx.me.servers.find(v=>+v.id===+r.server_id);return (!term||[r.name,r.config.domain,r.config.target,server?.address].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(term))&&(!s.filter||String(site?r.server_id:r.config.type)===s.filter)&&(!s.status||r.status===s.status);});
