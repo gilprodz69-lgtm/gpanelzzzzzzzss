@@ -31,6 +31,7 @@ curl -ksSf https://127.0.0.1:8443/ >/dev/null
 curl -ksSf https://127.0.0.1:8443/phpmyadmin/ | grep -q phpMyAdmin
 python3 tests/linux-host.py
 php8.3 tests/upload-http.php
+php8.3 tests/phpmyadmin-http.php
 python3 tests/upgrade-preservation.py prepare
 printf 'preserve-existing-data\n' > /srv/vpsmanager/update-preservation.txt
 old_release=$(readlink -f /opt/vpsmanager/current)

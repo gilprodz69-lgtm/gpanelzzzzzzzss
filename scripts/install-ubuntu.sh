@@ -202,7 +202,7 @@ EOF
 install -m 0644 "$release_dir"/deploy/vpsmanager-*.service "$release_dir"/deploy/vpsmanager-*.timer /etc/systemd/system/
 nginx -t
 systemctl daemon-reload
-systemctl enable --now vpsmanager-agent vpsmanager-worker vpsmanager-metrics.timer vpsmanager-certificates.timer
+systemctl enable --now vpsmanager-agent vpsmanager-worker vpsmanager-metrics.timer vpsmanager-certificates.timer vpsmanager-pma-cleanup.timer
 systemctl reload nginx
 stage='verificações finais'
 sleep 2

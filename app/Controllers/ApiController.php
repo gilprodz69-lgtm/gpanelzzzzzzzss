@@ -13,13 +13,14 @@ final class ApiController
     private Policy $policy;
     public function __construct(private Database $db) { $this->auth=new Auth($db); }
     public function handle(string $method,string $path,array $data): array {
+        if($method==='GET' && $path==='/branding') return \App\Services\Branding::read($this->db);
         if($method==='POST' && $path==='/auth/login') return $this->auth->login($data);
         if($method==='POST' && $path==='/auth/reset') return $this->reset($data);
         $this->policy=$this->auth->authenticate();
         if($method!=='GET') $this->auth->csrf();
         $u=$this->policy->user;
         $accounts=new AccountService($this->db,$this->policy); $servers=new ServerService($this->db,$this->policy); $resources=new ResourceService($this->db,$this->policy);
-        if($path==='/auth/me' && $method==='GET') return ['user'=>Auth::publicUser($u),'permissions'=>$this->policy->permissions(),'csrf'=>$this->auth->session['csrf']??null,'quotas'=>(new Quota($this->db))->summary($u),'two_factor'=>(bool)$u['totp_secret'],'servers'=>$servers->list(true),'catalog'=>Catalog::RESOURCES];
+        if($path==='/auth/me' && $method==='GET') return ['user'=>Auth::publicUser($u),'permissions'=>$this->policy->permissions(),'csrf'=>$this->auth->session['csrf']??null,'quotas'=>(new Quota($this->db))->summary($u),'two_factor'=>(bool)$u['totp_secret'],'servers'=>$servers->list(true),'catalog'=>Catalog::RESOURCES,'branding'=>\App\Services\Branding::read($this->db,(int)$u['tenant_id'])];
         if($path==='/auth/logout' && $method==='POST') return $this->auth->logout($u);
         if($path==='/dashboard' && $method==='GET') return $this->dashboard();
         if($path==='/users') { if($method==='GET') return ['data'=>$accounts->users()]; if($method==='POST') return $accounts->createUser($data); }
@@ -65,6 +66,7 @@ final class ApiController
             $r['dns']=['name'=>$r['name'],'type'=>filter_var($address,FILTER_VALIDATE_IP,FILTER_FLAG_IPV6)?'AAAA':(filter_var($address,FILTER_VALIDATE_IP)?'A':'CNAME'),'value'=>$address];
             return $r;
         }
+        if(preg_match('#^/databases/(\d+)/phpmyadmin$#D',$path,$m) && $method==='POST') return (new \App\Services\PhpMyAdmin($this->db,$this->auth,$this->policy))->issue((int)$m[1]);
         if(preg_match('#^/databases/(\d+)/(access|password)$#D',$path,$m)) {
             $this->policy->require('databases.'.($m[2]==='access'?'view':'edit'));
             $r=$resources->find('databases',(int)$m[1]);
@@ -121,7 +123,10 @@ final class ApiController
             if($method==='POST') {
                 $name=Input::choice($data['name']??'',['branding','alerts','nameservers'],'Configuração');
                 if(!is_array($data['value']??null)) throw new HttpError(422,'Configuração inválida.');
-                if($name==='branding') $value=['name'=>Input::text($data['value']['name']??'','Nome',1,40)];
+                if($name==='branding') {
+                    if(!$this->policy->isAdmin()) throw new HttpError(403,'Somente administradores podem alterar a identidade visual.');
+                    $value=\App\Services\Branding::validate($data['value']);
+                }
                 elseif($name==='nameservers') {
                     if(!$this->policy->isAdmin()) throw new HttpError(403,'Operação administrativa.');
                     $value=\App\Services\NameserverSettings::validate($data['value']);

@@ -14,6 +14,13 @@ if(!str_starts_with($path,'/api/v1/')) { require BASE_PATH.'/resources/views/app
 header('Content-Type: application/json; charset=utf-8');
 try {
     $method=$_SERVER['REQUEST_METHOD'];
+    if($path==='/api/v1/phpmyadmin/open') {
+        if($method!=='POST'||($_SERVER['HTTP_ORIGIN']??'')!==rtrim(getenv('APP_URL')?:'','/')) throw new App\Helpers\HttpError(403,'Origem não autorizada.');
+        $db=new App\Repositories\Database(); $auth=new App\Services\Auth($db); $policy=$auth->authenticate();
+        $auth->sessionOnly();
+        $url=(new App\Services\PhpMyAdmin($db,$auth,$policy))->consume(is_string($_POST['ticket']??null)?$_POST['ticket']:'');
+        header('Location: '.$url,true,303); exit;
+    }
     $binaryUpload=$path==='/api/v1/files/upload-chunk' && $method==='POST';
     $bodyLimit=$binaryUpload?8388608:2097152;
     if((int)($_SERVER['CONTENT_LENGTH']??0)>$bodyLimit) throw new App\Helpers\HttpError(413,'Bloco de dados excede o tamanho permitido.');

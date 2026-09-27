@@ -1,0 +1,10 @@
+[Unit]
+Description=Expire temporary phpMyAdmin database accounts
+After=mariadb.service
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/python3 /opt/vpsmanager/current/agent/pma.py
+UMask=0077
+NoNewPrivileges=true

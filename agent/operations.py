@@ -78,7 +78,7 @@ class Operations:
         self.catalog.commit()
 
     def execute(self, operation, p):
-        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'change_php', 'update_site', 'update_domain']
+        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'database_signon', 'change_php', 'update_site', 'update_domain']
         kinds = ['site', 'domain', 'database', 'ssl', 'sftp', 'backup', 'cron', 'firewall', 'container']
         allowed += [f'{verb}_{kind}' for verb in ['create', 'delete'] for kind in kinds]
         if operation not in allowed:
@@ -347,6 +347,10 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         digest = '*' + hashlib.sha1(hashlib.sha1(secret.encode()).digest()).hexdigest().upper()
         run(['/usr/bin/mariadb', '--protocol=socket', '--batch'], input_text=f"SET PASSWORD FOR '{name}'@'localhost' = '{digest}';")
         return {'message': 'Password updated'}
+
+    def database_signon(self, p):
+        import pma
+        return pma.create(self, p)
 
     def database_info(self, p):
         d = self.find('database', p); name = identifier(d['name'])

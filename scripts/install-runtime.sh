@@ -52,6 +52,40 @@ $cfg['UploadDir'] = '';
 $cfg['SaveDir'] = '';
 PHP
 chmod 0644 /etc/phpmyadmin/config.inc.php
+id vpsmanager >/dev/null 2>&1 || useradd --system --user-group --home-dir /opt/vpsmanager --shell /usr/sbin/nologin vpsmanager
+install -d -o root -g vpsmanager -m 0750 /etc/vpsmanager-pma-bridge
+if [[ ! -f /etc/vpsmanager-pma-bridge/secret ]]; then
+    (umask 077; openssl rand -hex 32 > /etc/vpsmanager-pma-bridge/secret)
+fi
+chown root:vpsmanager /etc/vpsmanager-pma-bridge/secret
+chmod 0640 /etc/vpsmanager-pma-bridge/secret
+install -o root -g vpm-pma -m 0640 /etc/vpsmanager-pma-bridge/secret /etc/vpsmanager-phpmyadmin/bridge.secret
+install -o root -g vpm-pma -m 0640 "$(dirname -- "${BASH_SOURCE[0]}")/../deploy/phpmyadmin/signon.php" /etc/vpsmanager-phpmyadmin/signon.php
+cat >> /etc/phpmyadmin/config.inc.php <<'PHP'
+$cfg['Servers'][2]['verbose'] = 'Acesso pelo painel';
+$cfg['Servers'][2]['auth_type'] = 'signon';
+$cfg['Servers'][2]['host'] = 'localhost';
+$cfg['Servers'][2]['AllowRoot'] = false;
+$cfg['Servers'][2]['AllowNoPassword'] = false;
+$cfg['Servers'][2]['SignonScript'] = '/etc/vpsmanager-phpmyadmin/signon.php';
+$cfg['Servers'][2]['SignonURL'] = '/#/databases';
+$cfg['Servers'][2]['LogoutURL'] = '/#/databases';
+PHP
+cat > /etc/nginx/conf.d/vpm-pma-bridge.conf <<'NGINX'
+# Credentials travel only over loopback, authenticated with a separate private secret.
+server {
+    listen 127.0.0.1:9084;
+    server_name localhost;
+    access_log off;
+    client_max_body_size 1k;
+    location = /credentials {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /opt/vpsmanager/current/deploy/phpmyadmin/auth.php;
+        fastcgi_pass unix:/run/php/vpsmanager.sock;
+    }
+    location / { return 404; }
+}
+NGINX
 cat > /etc/php/8.3/fpm/pool.d/vpm-pma.conf <<'POOL'
 [vpm-pma]
 user = vpm-pma

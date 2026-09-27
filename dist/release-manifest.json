@@ -1,5 +1,5 @@
 {
-  "version": "0.2.14-preview",
+  "version": "0.2.15-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 15,
-      "sha256": "395d0d8e1394fdc2b1cf22de96238e61283b6dc84660332acfeba64dd344ddc9"
+      "sha256": "9d3528af419a3966b3b8c9378040069d667fc73b4eafe7bf1504265dd45bd120"
     },
     {
       "path": "agent/files.py",
@@ -28,8 +28,13 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 38441,
-      "sha256": "fc357f84d5c64f27a572553ecad379e600b4620ab49b5e4b2f0545d5d3b897f3"
+      "bytes": 38549,
+      "sha256": "9c22f487ace807185fc12252543c579f5aafc1438fc69debfa7cab03caaf2093"
+    },
+    {
+      "path": "agent/pma.py",
+      "bytes": 2504,
+      "sha256": "959ffd9308cca9b4a1e510ac2513b15ff5dd43b2bec4a31cdc988a6596c59cb9"
     },
     {
       "path": "agent/runtime.py",
@@ -53,8 +58,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 21145,
-      "sha256": "4cc4f5d9681b100a2aa75ac10d6b65c20ffc8584bb31982b23c9fd8b58b0bd5b"
+      "bytes": 21664,
+      "sha256": "8e46f6ed8535a7399e914858fdb22fdbbc6e6bf40f32a23903a6f7ab2b8e092c"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -117,6 +122,11 @@
       "sha256": "3b1dc494e5ce506bbd98cae27acf457b6612aa59fa11ef203509566562d196f0"
     },
     {
+      "path": "app/Services/Branding.php",
+      "bytes": 1949,
+      "sha256": "9c69ef2e62225cff2ca3f70a27df6f8c2ef3f31c157480fe055fe9415f4143a9"
+    },
+    {
       "path": "app/Services/DomainService.php",
       "bytes": 3407,
       "sha256": "28de366375770423f70f7f08d77a42db917658915f89ddf6a7f9912176ed5921"
@@ -135,6 +145,11 @@
       "path": "app/Services/NameserverSettings.php",
       "bytes": 721,
       "sha256": "ecdb50e7c2c1075ca0b6f19961903a8c9d85adda968a4ee2b396c805015c7684"
+    },
+    {
+      "path": "app/Services/PhpMyAdmin.php",
+      "bytes": 4262,
+      "sha256": "a9a5e76c0fcb8eed26044d81488746b9c5ca4f54588001d91739c601126aa068"
     },
     {
       "path": "app/Services/Quota.php",
@@ -212,6 +227,11 @@
       "sha256": "26defac86176a5195c18bd524a3c30d00173e790771facc7905a9946cb8ecfa5"
     },
     {
+      "path": "database/migrations/005_phpmyadmin_sessions.php",
+      "bytes": 397,
+      "sha256": "cf21f5dd3527ad4c547a26ccf7fe75e838f85653d30b0dd2716ff6396791d1cc"
+    },
+    {
       "path": "deploy/Dockerfile",
       "bytes": 569,
       "sha256": "7c8e5cb61e761539e29cc239b38d48cbf5a77c7da73f404d0d373fca2d6b3081"
@@ -225,6 +245,16 @@
       "path": "deploy/nginx-upload.conf",
       "bytes": 254,
       "sha256": "af860dd4233baa5d940b602f4432637df9d64b7deba70fb97808876abc0b13ee"
+    },
+    {
+      "path": "deploy/phpmyadmin/auth.php",
+      "bytes": 692,
+      "sha256": "e783dafe20b52811c287ca42ffaf4eb2c33816ae91bcbb63277fea3ebf6176ca"
+    },
+    {
+      "path": "deploy/phpmyadmin/signon.php",
+      "bytes": 1127,
+      "sha256": "c5d69bba9074a47f58302364b979d4481dfa9dc0b61b8c051f581abb47b21b82"
     },
     {
       "path": "deploy/vpsmanager-agent.service",
@@ -250,6 +280,16 @@
       "path": "deploy/vpsmanager-metrics.timer",
       "bytes": 162,
       "sha256": "6b09647ff9960b161c339e14141d0303587a79a8ddf4669be8daa886c1da0e74"
+    },
+    {
+      "path": "deploy/vpsmanager-pma-cleanup.service",
+      "bytes": 217,
+      "sha256": "6b539bc39a667d03ddc49288b26ae4e8289ebcac61cc14cf9b5c4fe62a7271be"
+    },
+    {
+      "path": "deploy/vpsmanager-pma-cleanup.timer",
+      "bytes": 136,
+      "sha256": "3c43bb79591b0c9d6b29e39608b9ec15a228d3d18a54c327984309cb28c237d3"
     },
     {
       "path": "deploy/vpsmanager-worker.service",
@@ -290,6 +330,11 @@
       "path": "docs/INSTALL.md",
       "bytes": 4025,
       "sha256": "8896436bf1c950da398fd5539b61d32d0beae7604b9c265247830a75e1b9a7cd"
+    },
+    {
+      "path": "docs/PHPMYADMIN-SSO.md",
+      "bytes": 2210,
+      "sha256": "e89b9874b1f515c1cbae792ce8d3358e7ac8bf76946e6f74f7b7d8397fe54c13"
     },
     {
       "path": "docs/SECURITY.md",
@@ -338,8 +383,8 @@
     },
     {
       "path": "public/css/login.css",
-      "bytes": 3583,
-      "sha256": "d876d8ef9ec1d03bfb63479c4abcb33d323eb5cbea7ee5f22d076196da06acd4"
+      "bytes": 3343,
+      "sha256": "98180084c36522b83d4fc22a9aa43a4184496328d318a3cff7a624f76a811cb6"
     },
     {
       "path": "public/css/management.css",
@@ -353,8 +398,8 @@
     },
     {
       "path": "public/index.php",
-      "bytes": 3758,
-      "sha256": "9d578bfe6506c6688fc8f0f000cb06c27a75a7d821c97463bd6b2e036fef268e"
+      "bytes": 4284,
+      "sha256": "6b5fd7769f9f932427167fd0aaeb6bebbb10efa13a8f2e923e2e8068efe7e853"
     },
     {
       "path": "public/js/api.js",
@@ -363,8 +408,13 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 48395,
-      "sha256": "a8f26c2897d00bd8a0f435896798be74558b1f5d8c66c96bbe1c28d2da35f1d9"
+      "bytes": 49243,
+      "sha256": "32c7267598df54c8b5b2d7cc70f287b5e6985d72b8a67895ed5979aefd6230cb"
+    },
+    {
+      "path": "public/js/branding.js",
+      "bytes": 2535,
+      "sha256": "c75fad7c44540fc2671ddb906614e41132320b6e5147307b9b9a0a067ff59524"
     },
     {
       "path": "public/js/cron-schedule.js",
@@ -408,8 +458,8 @@
     },
     {
       "path": "public/js/management-ui.js",
-      "bytes": 2833,
-      "sha256": "8e4e095aa43acc4ebbafc11f2354410241cfeaf1c117f1d2ece60750348cd214"
+      "bytes": 3044,
+      "sha256": "3009d09173c8df52269a1ac4d80505cc26094c5318b97f735eea4cd61ca6a34f"
     },
     {
       "path": "public/js/upload.js",
@@ -548,13 +598,13 @@
     },
     {
       "path": "scripts/install-runtime.sh",
-      "bytes": 3863,
-      "sha256": "16dce29b229dad5baa7339b05c9c1dceedb03ef07b707f3721d4946fefdb8906"
+      "bytes": 5499,
+      "sha256": "5da50eea82154a9373de12be8b752fe83dc123868f72f0667fb1ffec6b96f422"
     },
     {
       "path": "scripts/install-ubuntu.sh",
-      "bytes": 11354,
-      "sha256": "91caf0c7517bb17251597800e0125fcb66633ad3251543021252ff1ebc58a124"
+      "bytes": 11383,
+      "sha256": "ebc6dcc62a8080199714a403230a6847bd9a07c264f79d0d1c6710c9c9b4e5f8"
     },
     {
       "path": "scripts/panel-certificate.py",
@@ -583,8 +633,8 @@
     },
     {
       "path": "scripts/upgrade-ubuntu.sh",
-      "bytes": 6680,
-      "sha256": "59f688040e230a203ae5b2b338322db81fffdef50939d733bb7282eeb0706dfe"
+      "bytes": 6709,
+      "sha256": "ed385f82239d0f056c47d90f309ab4f39ff84d8f654cbf8d253508bf16d2ef3c"
     },
     {
       "path": "scripts/wait-agent.py",

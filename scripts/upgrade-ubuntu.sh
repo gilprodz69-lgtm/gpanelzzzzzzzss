@@ -96,7 +96,7 @@ mv -Tf /opt/vpsmanager/current.next /opt/vpsmanager/current
 systemctl daemon-reload
 systemctl reload php8.3-fpm
 systemctl restart vpsmanager-agent vpsmanager-worker
-systemctl enable --now vpsmanager-metrics.timer vpsmanager-certificates.timer
+systemctl enable --now vpsmanager-metrics.timer vpsmanager-certificates.timer vpsmanager-pma-cleanup.timer
 systemctl reload nginx
 sleep 2
 systemctl is-active --quiet nginx php8.3-fpm mariadb vpsmanager-agent vpsmanager-worker
