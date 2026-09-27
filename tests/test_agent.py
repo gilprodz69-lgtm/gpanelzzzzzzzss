@@ -72,6 +72,23 @@ class AgentTests(unittest.TestCase):
             with self.assertRaises(Rejected): agent.execute({**data, 'payload': {'changed': True}})
             agent.db.close(); agent.ops.catalog.close()
 
+    def test_wordpress_archive_paths_and_existing_content(self):
+        import zipfile
+        from wordpress import extract, empty_site, PLACEHOLDER
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);target=root/'target';target.mkdir()
+            (target/'index.html').write_text(PLACEHOLDER,encoding='utf-8')
+            empty_site(target)
+            (target/'customer.php').write_text('preserve')
+            with self.assertRaises(Rejected):empty_site(target)
+            self.assertEqual((target/'customer.php').read_text(),'preserve')
+            for name in ['wordpress/../../outside.php','other/index.php','wordpress/a\\b.php']:
+                archive=root/'bad.zip'
+                with zipfile.ZipFile(archive,'w') as z:z.writestr(name,'bad')
+                with self.assertRaises(Rejected):extract(archive,target)
+            self.assertFalse((root/'outside.php').exists())
+
     def test_arbitrary_operation_denied(self):
         with tempfile.TemporaryDirectory() as directory:
             agent = Agent('a' * 64, directory)

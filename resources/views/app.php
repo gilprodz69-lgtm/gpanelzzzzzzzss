@@ -1,3 +1,4 @@
+<?php $assetVersion=rawurlencode(trim(file_get_contents(BASE_PATH.'/VERSION'))); ?>
 <!doctype html>
 <html lang="pt-BR" data-theme="light">
 <head>
@@ -10,10 +11,11 @@
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/management.css">
   <link rel="stylesheet" href="/css/hosting.css">
+  <link rel="stylesheet" href="/css/plugins.css">
   <link rel="stylesheet" href="/css/file-manager.css">
   <link rel="stylesheet" href="/css/file-editor.css">
-  <link rel="stylesheet" href="/css/login.css">
-  <script src="/js/app.js" type="module"></script>
+  <link rel="stylesheet" href="/css/login.css?v=<?= $assetVersion ?>">
+  <script src="/js/app.js?v=<?= $assetVersion ?>" type="module"></script>
 </head>
 <body>
   <div id="app"><div class="boot"><img src="/images/logo.svg" width="48" height="48" alt=""><span>VPS Manager</span><p>Carregando seu ambiente…</p></div></div>

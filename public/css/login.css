@@ -10,10 +10,10 @@
 .login-input input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#101a35;font:inherit;font-size:15px;padding:13px 0}.login-input input::placeholder{color:#8597b5}
 .login-input button{display:grid;place-items:center;border:0;background:none;color:#54647f;cursor:pointer;padding:5px;flex-shrink:0}.login-input button .icon{width:21px;height:21px}
 .login-submit{display:flex;justify-content:center;align-items:center;gap:20px;min-height:50px;margin-top:4px;border:1px solid #0877ff;border-radius:14px;background:linear-gradient(115deg,#087bff,#096dff);color:#fff;font:inherit;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 5px 18px #006cff10}.login-submit .icon{width:22px;height:22px}.login-submit:hover{filter:brightness(.97)}.login-submit:disabled{opacity:.6;cursor:wait}
-.login-two-factor{font-size:12px;color:#7c8da8;text-align:center;margin-top:-7px}.login-two-factor summary{cursor:pointer;list-style:none;padding:3px}.login-two-factor summary::-webkit-details-marker{display:none}.login-two-factor[open]{text-align:left}.login-two-factor label{font-size:14px;margin:14px 0 8px}.login-two-factor input{background:#f7f9fc;color:#101a35!important;border-color:#cedbef!important}
-.login-card button:focus-visible,.login-two-factor summary:focus-visible{outline:3px solid #78b3ff;outline-offset:3px}
+.login-card button:focus-visible{outline:3px solid #78b3ff;outline-offset:3px}
 
 .login-brand .custom-logo{width:auto;max-width:100%;height:64px;object-fit:contain}.brand .custom-logo{width:100%;max-width:190px;height:48px;object-fit:contain}.branding-preview{display:flex;align-items:center;gap:10px;min-height:86px;margin:12px 0;padding:12px;border:1px solid #cedbef;border-radius:12px;background:#fff;color:#101a35}.branding-preview img{max-width:100%;max-height:100px;width:auto}.branding-preview img:not(.custom-logo){width:48px}
 @media(max-width:450px){.login-page{padding:20px 14px}.login-card{padding:28px 22px 22px}.login-brand{font-size:25px}.login-card h1{font-size:27px}.login-input input{font-size:16px}}
 
 .login-brand span{white-space:normal;overflow-wrap:anywhere;min-width:0}.brand span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.login-challenge-hint{font-size:12px;text-align:center;color:#7c8da8;margin:0}.login-back{border:0;background:none;color:#086cf1;cursor:pointer;font:inherit;font-size:14px;padding:4px}#login-code{letter-spacing:.3em;font-size:22px;text-align:center}

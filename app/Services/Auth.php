@@ -23,6 +23,7 @@ final class Auth
         if($blocked) throw new HttpError(429,'Muitas tentativas. Aguarde 15 minutos.');
     }
     public function login(array $data): array {
+        $this->clearChallenge();
         $email=Input::email($data['email']??'');
         $this->rateLimit('login-ip:'.($_SERVER['REMOTE_ADDR']??'local'),40);
         $this->rateLimit('login-account:'.$email);
@@ -33,15 +34,68 @@ final class Auth
             if($u) Audit::write($this->db,$u,'auth.login','','denied');
             throw new HttpError(401,'E-mail, senha ou código inválidos.');
         }
-        if($u['totp_secret']) {
-            $step=Totp::verify(Crypto::decrypt($u['totp_secret']),(string)($data['code']??''),(int)$u['totp_last_step']);
-            if(!$step || $this->db->query('UPDATE users SET totp_last_step=? WHERE id=? AND totp_last_step<?',[$step,$u['id'],$step])->rowCount()!==1) throw new HttpError(401,'E-mail, senha ou código inválidos.');
+        if(password_needs_rehash($u['password_hash'],PASSWORD_DEFAULT)) {
+            $u['password_hash']=password_hash($password,PASSWORD_DEFAULT);
+            $this->db->query('UPDATE users SET password_hash=? WHERE id=?',[$u['password_hash'],$u['id']]);
         }
-        if(password_needs_rehash($u['password_hash'],PASSWORD_DEFAULT)) $this->db->query('UPDATE users SET password_hash=? WHERE id=?',[password_hash($password,PASSWORD_DEFAULT),$u['id']]);
+        if($u['totp_secret']) {
+            $raw=bin2hex(random_bytes(32)); $expires=time()+300;
+            $this->db->query('DELETE FROM login_challenges WHERE expires_at<=?',[time()]);
+            $this->db->insert('login_challenges',['token_hash'=>hash('sha256',$raw),'user_id'=>$u['id'],'security_stamp'=>$this->securityStamp($u),'expires_at'=>$expires,'attempts'=>0]);
+            $this->challengeCookie($raw,$expires);
+            return ['requires_2fa'=>true,'expires_in'=>300];
+        }
+        return $this->finishLogin($this->newSession($u));
+    }
+    private function securityStamp(array $u): string { return hash('sha256',$u['password_hash'].'|'.$u['totp_secret']); }
+    private function challengeCookie(string $token,int $expires): void {
+        setcookie('vps_login_challenge',$token,['expires'=>$expires,'path'=>'/api/v1/auth/','secure'=>getenv('COOKIE_SECURE')!=='0','httponly'=>true,'samesite'=>'Strict']);
+    }
+    private function clearChallenge(): void {
+        $raw=$_COOKIE['vps_login_challenge']??'';
+        if(is_string($raw)&&$raw!=='') {
+            $this->db->query('DELETE FROM login_challenges WHERE token_hash=?',[hash('sha256',$raw)]);
+            $this->challengeCookie('',time()-3600);
+        }
+    }
+    public function verifyTwoFactor(array $data): array {
+        $this->rateLimit('login-2fa-ip:'.($_SERVER['REMOTE_ADDR']??'local'),40);
+        $raw=$_COOKIE['vps_login_challenge']??'';
+        if(!is_string($raw)||!preg_match('/^[a-f0-9]{64}$/D',$raw)) throw new HttpError(410,'A tentativa expirou. Volte e entre com e-mail e senha novamente.');
+        $result=$this->db->transaction(function()use($raw,$data){
+            $hash=hash('sha256',$raw);$lock=$this->db->driver()==='mysql'?' FOR UPDATE':'';
+            $challenge=$this->db->one('SELECT * FROM login_challenges WHERE token_hash=?'.$lock,[$hash]);
+            if(!$challenge||(int)$challenge['expires_at']<=time()) return ['error'=>410];
+            if((int)$challenge['attempts']>=5) return ['error'=>429];
+            $u=$this->db->one('SELECT * FROM users WHERE id=?'.$lock,[$challenge['user_id']]);
+            if(!$u||!$u['totp_secret']||!AccountValidity::available($this->db,$u)||!hash_equals($challenge['security_stamp'],$this->securityStamp($u))) {
+                $this->db->query('DELETE FROM login_challenges WHERE token_hash=?',[$hash]);return ['error'=>410];
+            }
+            // Failed attempts must commit too; do not throw inside this transaction.
+            $this->db->query('UPDATE login_challenges SET attempts=attempts+1 WHERE token_hash=?',[$hash]);
+            $code=is_string($data['code']??null)?$data['code']:'';
+            $step=Totp::verify(Crypto::decrypt($u['totp_secret']),$code,(int)$u['totp_last_step']);
+            if(!$step||$this->db->query('UPDATE users SET totp_last_step=? WHERE id=? AND totp_last_step<?',[$step,$u['id'],$step])->rowCount()!==1) {
+                Audit::write($this->db,$u,'auth.2fa','','denied');return ['error'=>(int)$challenge['attempts']>=4?429:401];
+            }
+            $this->db->query('DELETE FROM login_challenges WHERE token_hash=?',[$hash]);
+            return ['session'=>$this->newSession($u)];
+        });
+        if(isset($result['error'])) {
+            $status=$result['error'];
+            throw new HttpError($status,$status===410?'A tentativa expirou ou o acesso mudou. Volte e entre novamente.':($status===429?'Limite de tentativas atingido. Volte e entre novamente.':'Código inválido ou já utilizado. Tente o código atual do aplicativo.'));
+        }
+        return $this->finishLogin($result['session']);
+    }
+    private function newSession(array $u): array {
         $raw=bin2hex(random_bytes(32)); $now=time(); $ttl=(int)(getenv('SESSION_TTL')?:3600);
         $this->db->insert('sessions',['id'=>hash('sha256',$raw),'user_id'=>$u['id'],'csrf'=>bin2hex(random_bytes(32)),'ip'=>$_SERVER['REMOTE_ADDR']??'127.0.0.1','user_agent'=>substr($_SERVER['HTTP_USER_AGENT']??'CLI',0,255),'created_at'=>$now,'last_seen'=>$now,'expires_at'=>$now+$ttl]);
-        $this->cookie($raw,$now+$ttl);
         Audit::write($this->db,$u,'auth.login');
+        return ['token'=>$raw,'expires'=>$now+$ttl];
+    }
+    private function finishLogin(array $session): array {
+        $this->cookie($session['token'],$session['expires']);
+        $this->challengeCookie('',time()-3600);
         return ['message'=>'Autenticado.'];
     }
     private function cookie(string $token,int $expires): void {

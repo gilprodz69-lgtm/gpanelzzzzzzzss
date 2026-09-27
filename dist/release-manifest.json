@@ -1,5 +1,5 @@
 {
-  "version": "0.2.15-preview",
+  "version": "0.2.16-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 15,
-      "sha256": "9d3528af419a3966b3b8c9378040069d667fc73b4eafe7bf1504265dd45bd120"
+      "sha256": "9297953e2686023c2620dad5f40fe7b2a84db8a0756ac8524dcf60aa45e14669"
     },
     {
       "path": "agent/files.py",
@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 38549,
-      "sha256": "9c22f487ace807185fc12252543c579f5aafc1438fc69debfa7cab03caaf2093"
+      "bytes": 38674,
+      "sha256": "37bb5ad8ef0caefbe7f4ec8971d00dc3485063b7159365b6137c5a7f8ff4936e"
     },
     {
       "path": "agent/pma.py",
@@ -57,9 +57,24 @@
       "sha256": "a37e3baa75b365d7eb8ac998b7e38e97a18af750fbd0bc540ace4417eefd2d30"
     },
     {
+      "path": "agent/wordpress-check.php",
+      "bytes": 298,
+      "sha256": "817739bfedb90ecc080ed1db74e88110223a6c1b45c34eaf372dde3b20603eeb"
+    },
+    {
+      "path": "agent/wordpress-install.php",
+      "bytes": 851,
+      "sha256": "c280779366d00d8e2542fd2e6af66249d4d75ec7e4e77f8e52bd8b99c93f7808"
+    },
+    {
+      "path": "agent/wordpress.py",
+      "bytes": 8491,
+      "sha256": "3543cfefdfe16a981bc9844ac50fbd6c3ca832b25c8ffc0f69d3652562e3da35"
+    },
+    {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 21664,
-      "sha256": "8e46f6ed8535a7399e914858fdb22fdbbc6e6bf40f32a23903a6f7ab2b8e092c"
+      "bytes": 22026,
+      "sha256": "9fa715916a635488e34f4a91001e866c4d22dbb3ca2d8ab445e9f75d5d619ffb"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -113,8 +128,8 @@
     },
     {
       "path": "app/Services/Auth.php",
-      "bytes": 5841,
-      "sha256": "5d47a9ca49924ff49777375c051eb9b75e6c068c15d133ecf0bde6dbd7b2bb83"
+      "bytes": 9429,
+      "sha256": "26017505338161c959bf144e19a37f4543786a255e326a1bd85cd642953c6d09"
     },
     {
       "path": "app/Services/BackupScheduler.php",
@@ -152,6 +167,11 @@
       "sha256": "a9a5e76c0fcb8eed26044d81488746b9c5ca4f54588001d91739c601126aa068"
     },
     {
+      "path": "app/Services/PluginStore.php",
+      "bytes": 4322,
+      "sha256": "dbcb83c1b0722eee42c9d112f1e214152379ab828ba0c321e7eb2839c1cbd4f4"
+    },
+    {
       "path": "app/Services/Quota.php",
       "bytes": 2708,
       "sha256": "f79c973618ab3e7053ada7c3a70a15396c818d59dda4a0d464604657abf2e0d0"
@@ -178,8 +198,8 @@
     },
     {
       "path": "app/Services/Worker.php",
-      "bytes": 7604,
-      "sha256": "591ca92f14c92ccfb7850a48a02235a78f8b606378ac46c66377e0ae6cf563d6"
+      "bytes": 8706,
+      "sha256": "7694f46fdde553c7045903d5c7cebbdcfcef8e03b7db03b462a66e03e92a7994"
     },
     {
       "path": "app/Validators/CronSchedule.php",
@@ -230,6 +250,16 @@
       "path": "database/migrations/005_phpmyadmin_sessions.php",
       "bytes": 397,
       "sha256": "cf21f5dd3527ad4c547a26ccf7fe75e838f85653d30b0dd2716ff6396791d1cc"
+    },
+    {
+      "path": "database/migrations/006_login_challenges.php",
+      "bytes": 336,
+      "sha256": "d269532187260577021bf4e13e882c7dce39f77539bd163835051e29475e4a0c"
+    },
+    {
+      "path": "database/migrations/007_plugin_installations.php",
+      "bytes": 506,
+      "sha256": "c3a2a2a8778ebf9212bb4f1fc486432705895f9e8d2486904784108c60553911"
     },
     {
       "path": "deploy/Dockerfile",
@@ -332,9 +362,19 @@
       "sha256": "8896436bf1c950da398fd5539b61d32d0beae7604b9c265247830a75e1b9a7cd"
     },
     {
+      "path": "docs/LOGIN-2FA.md",
+      "bytes": 922,
+      "sha256": "3d4183a23a85a412e92dac134cc8ce6db3d7278c7fcff3be7ea312c2a5f24932"
+    },
+    {
       "path": "docs/PHPMYADMIN-SSO.md",
       "bytes": 2210,
       "sha256": "e89b9874b1f515c1cbae792ce8d3358e7ac8bf76946e6f74f7b7d8397fe54c13"
+    },
+    {
+      "path": "docs/PLUGINS.md",
+      "bytes": 2038,
+      "sha256": "313e71dfee1155d14f7dd952932491b20191237427c5ca46e72992066563b836"
     },
     {
       "path": "docs/SECURITY.md",
@@ -383,13 +423,18 @@
     },
     {
       "path": "public/css/login.css",
-      "bytes": 3499,
-      "sha256": "7a7834d5f5bc71ab0fd9b8cc26c5f0b20434e17f6714556864650e89d3ba5860"
+      "bytes": 3300,
+      "sha256": "de2aeb81c3e3ce1dab65894e29c9a5a70e1dff47bb8e1ba4afb959b8981856e5"
     },
     {
       "path": "public/css/management.css",
       "bytes": 798,
       "sha256": "4f538dd28bcb3320a9daf0f0dbfa9de9c6d469a56a91dc67b9001347c2e01aee"
+    },
+    {
+      "path": "public/css/plugins.css",
+      "bytes": 859,
+      "sha256": "32006a91ecd026db7e2bdbbe2d1f51f41eb8d8d4cef5d72e2fae7ebcac16d691"
     },
     {
       "path": "public/images/logo.svg",
@@ -408,8 +453,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 49243,
-      "sha256": "32c7267598df54c8b5b2d7cc70f287b5e6985d72b8a67895ed5979aefd6230cb"
+      "bytes": 50739,
+      "sha256": "9631141f266dde9a28e6d735a01eb05edfde2a00b506016ae1bbf9cf646103ae"
     },
     {
       "path": "public/js/branding.js",
@@ -453,13 +498,18 @@
     },
     {
       "path": "public/js/icons.js",
-      "bytes": 5383,
-      "sha256": "f547678d686209642ce67f9a62ac24008993f7892a240acd8f115068834d3a84"
+      "bytes": 5512,
+      "sha256": "a7db023735377c44f33b6c9854f3fba8c1049b7a8aa76fdacb4c439d4754c3eb"
     },
     {
       "path": "public/js/management-ui.js",
       "bytes": 3044,
       "sha256": "3009d09173c8df52269a1ac4d80505cc26094c5318b97f735eea4cd61ca6a34f"
+    },
+    {
+      "path": "public/js/plugins.js",
+      "bytes": 3843,
+      "sha256": "cb4b15e612de8b6a0929d7f15a23259b646751eb43c04b44090412e25dcdb696"
     },
     {
       "path": "public/js/upload.js",
@@ -578,8 +628,8 @@
     },
     {
       "path": "resources/views/app.php",
-      "bytes": 1018,
-      "sha256": "160b453ce3c9b19e0fb088e9952100848d1fd3e159774b0b69a235e0852862a9"
+      "bytes": 1198,
+      "sha256": "33361385bff7f78a3091806929e830de392c8fd52a6e67b330c63e0865e5540b"
     },
     {
       "path": "scripts/apt-safe.sh",

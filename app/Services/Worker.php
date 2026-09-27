@@ -21,6 +21,10 @@ final class Worker
             $this->db->transaction(function() use($job,$result,$payload){
                 $this->db->lockTenant((int)$job['tenant_id']);
                 $this->db->query("UPDATE jobs SET status='completed',result_json=?,finished_at=?,payload=? WHERE id=?",[json_encode($result),time(),Crypto::encrypt('{}'),$job['id']]);
+                if($job['operation']==='install_wordpress') {
+                    $this->db->query("UPDATE plugin_installations SET status='completed' WHERE tenant_id=? AND job_id=?",[$job['tenant_id'],$job['id']]);
+                    $this->db->query("UPDATE `databases` SET status='active',updated_at=? WHERE tenant_id=? AND id=?",[time(),$job['tenant_id'],$payload['database_id']]);
+                }
                 if(isset(Catalog::RESOURCES[$job['resource_type']??''])) {
                     $table=$job['resource_type']; $delete=str_starts_with($job['operation'],'delete_');
                     if($job['operation']==='update_site') WebsiteService::complete($this->db,$payload,$result);
@@ -47,6 +51,12 @@ final class Worker
             $this->db->transaction(function() use($job,$e){
                 $message=substr($e->getMessage(),0,500);
                 $this->db->query("UPDATE jobs SET status='failed',error=?,finished_at=? WHERE id=?",[$message,time(),$job['id']]);
+                if($job['operation']==='install_wordpress') {
+                    $this->db->query("UPDATE plugin_installations SET status='failed' WHERE tenant_id=? AND job_id=?",[$job['tenant_id'],$job['id']]);
+                    $installation=$this->db->one('SELECT database_id FROM plugin_installations WHERE tenant_id=? AND job_id=?',[$job['tenant_id'],$job['id']]);
+                    if($installation)$this->db->query("UPDATE `databases` SET status='failed',updated_at=? WHERE tenant_id=? AND id=?",[time(),$job['tenant_id'],$installation['database_id']]);
+                    $this->db->query('UPDATE jobs SET payload=? WHERE id=?',[Crypto::encrypt('{}'),$job['id']]);
+                }
                 if(isset(Catalog::RESOURCES[$job['resource_type']??''])) $this->db->query('UPDATE `'.$job['resource_type']."` SET status='failed',updated_at=? WHERE tenant_id=? AND id=?",[time(),$job['tenant_id'],$job['resource_id']]);
                 $u=$this->db->one('SELECT * FROM users WHERE tenant_id=? AND id=?',[$job['tenant_id'],$job['owner_id']]); Audit::write($this->db,$u,'agent.'.$job['operation'],(string)$job['resource_id'],'failed');
                 $this->notify($job,'Operação falhou',$job['operation'].': '.$message);

@@ -15,6 +15,7 @@ final class ApiController
     public function handle(string $method,string $path,array $data): array {
         if($method==='GET' && $path==='/branding') return \App\Services\Branding::read($this->db);
         if($method==='POST' && $path==='/auth/login') return $this->auth->login($data);
+        if($method==='POST' && $path==='/auth/2fa') return $this->auth->verifyTwoFactor($data);
         if($method==='POST' && $path==='/auth/reset') return $this->reset($data);
         $this->policy=$this->auth->authenticate();
         if($method!=='GET') $this->auth->csrf();
@@ -23,6 +24,8 @@ final class ApiController
         if($path==='/auth/me' && $method==='GET') return ['user'=>Auth::publicUser($u),'permissions'=>$this->policy->permissions(),'csrf'=>$this->auth->session['csrf']??null,'quotas'=>(new Quota($this->db))->summary($u),'two_factor'=>(bool)$u['totp_secret'],'servers'=>$servers->list(true),'catalog'=>Catalog::RESOURCES,'branding'=>\App\Services\Branding::read($this->db,(int)$u['tenant_id'])];
         if($path==='/auth/logout' && $method==='POST') return $this->auth->logout($u);
         if($path==='/dashboard' && $method==='GET') return $this->dashboard();
+        if($path==='/plugins' && $method==='GET') return (new \App\Services\PluginStore($this->db,$this->policy))->listing();
+        if($path==='/plugins/install' && $method==='POST') return (new \App\Services\PluginStore($this->db,$this->policy))->install($data);
         if($path==='/users') { if($method==='GET') return ['data'=>$accounts->users()]; if($method==='POST') return $accounts->createUser($data); }
         if(preg_match('#^/users/(\d+)$#D',$path,$m) && $method==='PATCH') return $accounts->updateUser((int)$m[1],$data);
         if(preg_match('#^/users/(\d+)$#D',$path,$m) && $method==='GET') return $accounts->userDetails((int)$m[1]);
