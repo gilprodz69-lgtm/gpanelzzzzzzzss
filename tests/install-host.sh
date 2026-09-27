@@ -31,6 +31,7 @@ curl -ksSf https://127.0.0.1:8443/ >/dev/null
 curl -ksSf https://127.0.0.1:8443/phpmyadmin/ | grep -q phpMyAdmin
 python3 tests/linux-host.py
 php8.3 tests/upload-http.php
+python3 tests/upgrade-preservation.py prepare
 printf 'preserve-existing-data\n' > /srv/vpsmanager/update-preservation.txt
 old_release=$(readlink -f /opt/vpsmanager/current)
 printf 'obsolete\n' > "$old_release/obsolete-release-file.txt"
@@ -39,6 +40,7 @@ install -o root -g vpm-pma -m 0640 /etc/vpsmanager-phpmyadmin/secret /etc/vpsman
 pma_before=$(sha256sum /etc/vpsmanager-phpmyadmin/secret | cut -d ' ' -f 1)
 rm -- /etc/vpsmanager-phpmyadmin/secret
 VPM_UPDATE=1 bash install.sh
+python3 tests/upgrade-preservation.py verify
 check_permissions
 test "$credentials_before" = "$(sha256sum /root/vpsmanager-access.txt)"
 test "$pma_before" = "$(sha256sum /etc/vpsmanager-phpmyadmin/secret | cut -d ' ' -f 1)"
