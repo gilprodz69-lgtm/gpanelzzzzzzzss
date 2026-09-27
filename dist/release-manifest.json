@@ -33,8 +33,8 @@
     },
     {
       "path": "agent/pma.py",
-      "bytes": 2504,
-      "sha256": "959ffd9308cca9b4a1e510ac2513b15ff5dd43b2bec4a31cdc988a6596c59cb9"
+      "bytes": 2489,
+      "sha256": "4e41b3edd3cb5b738af574c614347a7d77bb4332a63acadf20a0f01230eb81ec"
     },
     {
       "path": "agent/runtime.py",
@@ -383,8 +383,8 @@
     },
     {
       "path": "public/css/login.css",
-      "bytes": 3343,
-      "sha256": "98180084c36522b83d4fc22a9aa43a4184496328d318a3cff7a624f76a811cb6"
+      "bytes": 3499,
+      "sha256": "7a7834d5f5bc71ab0fd9b8cc26c5f0b20434e17f6714556864650e89d3ba5860"
     },
     {
       "path": "public/css/management.css",
@@ -633,8 +633,8 @@
     },
     {
       "path": "scripts/upgrade-ubuntu.sh",
-      "bytes": 6709,
-      "sha256": "ed385f82239d0f056c47d90f309ab4f39ff84d8f654cbf8d253508bf16d2ef3c"
+      "bytes": 7027,
+      "sha256": "b390173f8b6d62f83f79faf61e34809dd30345a3c871a169e0e3b3064df286fc"
     },
     {
       "path": "scripts/wait-agent.py",

@@ -18,6 +18,7 @@ function req($path,$body=null,$form=false,$follow=false,$cookie=true,$origin=nul
 }
 function ensure($condition,$label){if(!$condition)throw new RuntimeException($label);}
 try{
+ $bridge=curl_init('http://127.0.0.1:9084/credentials');curl_setopt_array($bridge,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>'',CURLOPT_RETURNTRANSFER=>true,CURLOPT_COOKIE=>'vps_session='.$session]);curl_exec($bridge);ensure(curl_getinfo($bridge,CURLINFO_RESPONSE_CODE)===403,'Private bridge rejects missing secret');curl_close($bridge);
  $policy=new App\Middleware\Policy($db,$u);$rs=new App\Services\ResourceService($db,$policy);
  $resource=$rs->create('databases',['server_id'=>(int)$server['id'],'name'=>'pma_ci','username'=>'pma_ci','password'=>'DisposableDatabase!17428'])['id'];
  for($i=0;$i<300;$i++){if($db->scalar('SELECT status FROM `databases` WHERE id=?',[$resource])==='active')break;usleep(100000);}
@@ -38,6 +39,9 @@ try{
  try{$pdo->query('SELECT * FROM mysql.user');throw new RuntimeException('Cross database access allowed');}catch(PDOException){}
  try{$pdo->exec("CREATE USER 'forbidden_sso'@'localhost'");throw new RuntimeException('Global privilege allowed');}catch(PDOException){}
  $pdo=null;
+ $root=new PDO('mysql:unix_socket=/run/mysqld/mysqld.sock','root','');
+ $q=$root->prepare('SELECT authentication_string FROM mysql.user WHERE User=? AND Host=?');$q->execute(['u'.$u['id'].'_pma_ci','localhost']);
+ $expected='*'.strtoupper(sha1(sha1('DisposableDatabase!17428',true)));ensure($q->fetchColumn()===$expected,'Original application password preserved');
  $public=req('/api/v1/branding');ensure($public[0]===200,'Public branding');
  $im=imagecreatetruecolor(20,10);ob_start();imagepng($im);$png=ob_get_clean();
  [$status]=req('/api/v1/settings',['name'=>'branding','value'=>['name'=>'CI panel','logo'=>'data:image/png;base64,'.base64_encode($png)]]);ensure($status===200,'Logo upload');

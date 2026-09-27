@@ -1,5 +1,4 @@
 """Short-lived phpMyAdmin accounts; no credentials are persisted by the agent."""
-import hashlib
 import re
 import time
 from runtime import run

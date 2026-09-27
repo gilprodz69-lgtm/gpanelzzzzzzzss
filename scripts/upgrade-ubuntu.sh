@@ -25,6 +25,10 @@ chmod 0600 "$backup_dir/database.sql"
 cp -a /opt/vpsmanager/shared/.env "$backup_dir/environment"
 cp -a /etc/nginx/conf.d/vpsmanager-panel.conf "$backup_dir/panel.conf"
 cp -a /etc/vpsmanager "$backup_dir/configuration"
+install -d -m 0700 "$backup_dir/phpmyadmin"
+for config in /etc/phpmyadmin/config.inc.php /etc/vpsmanager-phpmyadmin /etc/vpsmanager-pma-bridge /etc/nginx/snippets/vpm-phpmyadmin.conf /etc/nginx/conf.d/vpm-pma-bridge.conf; do
+    if [[ -e "$config" ]]; then cp -a --parents "$config" "$backup_dir/phpmyadmin/"; fi
+done
 printf '%s\n' "$old_release" > "$backup_dir/previous-release"
 stage='dependências'
 migration_started=0
