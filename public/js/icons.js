@@ -61,4 +61,5 @@ const paths = {
  terminal:'<path d="m4 6 6 6-6 6m9 0h7"/>',
  notifications:'<path d="M18 8a6 6 0 0 0-12 0c0 8-3 8-3 10h18c0-2-3-2-3-10M9 22h6"/>'
 };
+paths.fileZip='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 3h2M8 5h2m-1 2h2M8 9h2m-1 2h2M8 13h2"/><rect x="8" y="15" width="4" height="4" rx="1"/>';
 export const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||paths.servers}</svg>`;

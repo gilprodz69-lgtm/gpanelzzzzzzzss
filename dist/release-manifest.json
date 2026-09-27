@@ -1,5 +1,5 @@
 {
-  "version": "0.2.13-preview",
+  "version": "0.2.14-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 15,
-      "sha256": "1b3646bef16d995327650336ae065b3d1983135b0a1ae608a1ca01368bfc347c"
+      "sha256": "395d0d8e1394fdc2b1cf22de96238e61283b6dc84660332acfeba64dd344ddc9"
     },
     {
       "path": "agent/files.py",
@@ -302,6 +302,11 @@
       "sha256": "6bbc69ca2b98f2d68db362ef1591e915b94b522407d7f06193581c954b80ea30"
     },
     {
+      "path": "docs/TROUBLESHOOTING-PAYMENTS.md",
+      "bytes": 2521,
+      "sha256": "f1384360a8723a886b4929f62fbb47ee22fc5c30499f6342d5f67e1a8f7d2e4c"
+    },
+    {
       "path": "docs/hosting-compatibility.md",
       "bytes": 3013,
       "sha256": "503f3cef0826c95db90bd5a988f78d3f3297e0a4546285ed13a023736e647230"
@@ -323,8 +328,8 @@
     },
     {
       "path": "public/css/file-manager.css",
-      "bytes": 11142,
-      "sha256": "3de4b7df7da2da3c68670fc25762b3a36568be96952af24723b2ecfd92b75039"
+      "bytes": 11655,
+      "sha256": "b439a0c3328d503a9a2cf4354541ee7f71dd524b5dae10825257d09ecb0ea9c9"
     },
     {
       "path": "public/css/hosting.css",
@@ -383,8 +388,8 @@
     },
     {
       "path": "public/js/file-manager.js",
-      "bytes": 27450,
-      "sha256": "a4715a0b5988552b9fa83992589cd109283c3d256e1cd5ba849557c39f72c9a9"
+      "bytes": 27592,
+      "sha256": "b5e435a7bd9d94899aa3b12a259ae527bc48f1e89b4fde2c1221aefc24ccc44f"
     },
     {
       "path": "public/js/forms.js",
@@ -398,8 +403,8 @@
     },
     {
       "path": "public/js/icons.js",
-      "bytes": 5187,
-      "sha256": "dbff57060d1f6d75d1a25d034341e55dc37950ba15ada0b55866f52adaa19432"
+      "bytes": 5383,
+      "sha256": "f547678d686209642ce67f9a62ac24008993f7892a240acd8f115068834d3a84"
     },
     {
       "path": "public/js/management-ui.js",
