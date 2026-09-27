@@ -397,6 +397,11 @@
       "sha256": "f1384360a8723a886b4929f62fbb47ee22fc5c30499f6342d5f67e1a8f7d2e4c"
     },
     {
+      "path": "docs/domain-php.md",
+      "bytes": 1375,
+      "sha256": "5a07ab04103d65919b111616d7d8a80e60561076d10b20c396a625353d588d88"
+    },
+    {
       "path": "docs/hosting-compatibility.md",
       "bytes": 3013,
       "sha256": "503f3cef0826c95db90bd5a988f78d3f3297e0a4546285ed13a023736e647230"
@@ -498,8 +503,8 @@
     },
     {
       "path": "public/js/forms.js",
-      "bytes": 8490,
-      "sha256": "ed462fd5206d072bd82e372b69cc6645a72b59512d6d87a6457d200a60a1aae9"
+      "bytes": 8517,
+      "sha256": "00a9fa36b8cddc7d7a9b30c6daf1fb78c2cdb1c733c3b7a89b7fadcc18f68ce4"
     },
     {
       "path": "public/js/hosting.js",

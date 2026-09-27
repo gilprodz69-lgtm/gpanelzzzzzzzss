@@ -56,7 +56,7 @@ try{
  assert.equal(await page.getByLabel('Versão PHP',{exact:true}).inputValue(),'8.3');
  await page.getByLabel('Versão PHP',{exact:true}).selectOption('7.4');
  await page.screenshot({path:'test-results/domain-php.png'});
- await page.getByRole('button',{name:'Alterar PHP',exact:true}).click();
+ await page.locator('#modal').getByRole('button',{name:'Alterar PHP',exact:true}).click();
  await page.waitForFunction(()=>!document.querySelector('#modal').open);
  assert.deepEqual(submitted[2],{php_version:'7.4'});
  await page.screenshot({path:'test-results/domains.png'});

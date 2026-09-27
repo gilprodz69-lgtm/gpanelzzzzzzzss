@@ -2,7 +2,7 @@ import{api,esc}from'./api.js';
 import{commandFields,scheduleFields,bindSchedule}from'./cron-schedule.js';
 import{domainForm}from'./domains.js?v=0.2.18';
 const field=(name,label,type='text',extra='')=>`<label>${label}<input class="input" name="${name}" type="${type}" ${extra} required></label>`;
-const select=(name,label,items,selected='')=>`<label>${label}<select class="input" name="${name}" required>${items.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(selected)?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`;
+const select=(name,label,items,selected='')=>`<label>${label}<select class="input" name="${name}" aria-label="${esc(label)}" required>${items.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(selected)?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`;
 const limitsLabels={websites:'Sites',domains:'Domínios',databases:'Bancos',ssl_certificates:'Certificados SSL',ftp_accounts:'Contas SFTP',backups:'Backups',cron_jobs:'Cron jobs',docker_containers:'Containers',users:'Clientes',storage_mb:'Armazenamento (MB)',traffic_mb:'Tráfego (MB)',cpu:'CPU',ram_mb:'RAM (MB)'};
 export async function creationForm(kind,ctx,preset){
  if(kind==='domains')return domainForm(ctx,preset);
