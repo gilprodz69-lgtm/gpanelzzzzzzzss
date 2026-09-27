@@ -22,5 +22,8 @@ with tarfile.open(fileobj=io.BytesIO(package), mode='r:gz') as archive:
         assert not any(part in ['.tools', '.env', 'storage', 'node_modules'] for part in Path(member.name).parts)
         content = archive.extractfile(member).read()
         assert hashlib.sha256(content).hexdigest() == expected[member.name]['sha256'], member.name
-        assert content == (root / member.name).read_bytes().replace(b'\r\n', b'\n'), member.name
+        source = (root / member.name).read_bytes()
+        if Path(member.name).suffix in ['.php', '.py', '.sh', '.js', '.css', '.md', '.json', '.yaml', '.yml', '.service', '.timer', '.conf']:
+            source = source.replace(b'\r\n', b'\n')
+        assert content == source, member.name
 print(f'PASS: installer payload and {len(expected)} source files verified; no secret directories packaged.')

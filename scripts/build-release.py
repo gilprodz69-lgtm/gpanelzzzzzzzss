@@ -111,7 +111,8 @@ with zipfile.ZipFile(DIST / 'github-upload.zip', 'w', zipfile.ZIP_DEFLATED) as a
         data = path.read_bytes()
         if any(secret in data for secret in secrets): raise SystemExit('Secret found in upload: ' + name)
         archive.writestr(name, data)
-        entries.append({'path': name, 'encoding': 'base64' if path.suffix == '.gz' else 'utf-8', 'content': base64.b64encode(data).decode() if path.suffix == '.gz' else data.decode('utf-8')})
+        binary = path.suffix.lower() in ['.gz', '.png', '.jpg', '.jpeg', '.webp', '.ico', '.woff', '.woff2']
+        entries.append({'path': name, 'encoding': 'base64' if binary else 'utf-8', 'content': base64.b64encode(data).decode() if binary else data.decode('utf-8')})
 # Tool handoff file contains only files already vetted for publication, not local secrets.
 (ROOT / '.tools').mkdir(exist_ok=True)
 (ROOT / '.tools/publish-files.json').write_text(json.dumps(entries, ensure_ascii=False), encoding='utf-8')

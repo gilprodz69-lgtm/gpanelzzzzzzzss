@@ -11,3 +11,5 @@ Acompanhe o resultado em **Minhas instalações**. Após concluir, use **Abrir s
 Em caso de falha, os dados já produzidos não são apagados automaticamente. O banco reservado aparece em Bancos de Dados e pode ser removido se não for utilizado. Se a instalação SQL tiver começado, a pasta oculta de preparação é preservada para diagnóstico. Não repita sobre conteúdo parcial sem verificar o estado. A loja não executa pacotes arbitrários enviados por URL e não remove instalações existentes.
 
 Referência: [instalação do WordPress](https://developer.wordpress.org/reference/functions/wp_install/) e [requisitos oficiais](https://wordpress.org/about/requirements/).
+
+A imagem `public/images/wordpress-logo.png` é o W Mark oficial, obtido em https://wordpress.org/about/logos/ e servido localmente sem alteração de proporção.

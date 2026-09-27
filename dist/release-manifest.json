@@ -1,5 +1,5 @@
 {
-  "version": "0.2.16-preview",
+  "version": "0.2.17-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -18,8 +18,8 @@
     },
     {
       "path": "VERSION",
-      "bytes": 15,
-      "sha256": "9297953e2686023c2620dad5f40fe7b2a84db8a0756ac8524dcf60aa45e14669"
+      "bytes": 16,
+      "sha256": "ab294110fb08e0df0ecb9d50068cb6b3b98f64caeeb852615eb2cd4391d89099"
     },
     {
       "path": "agent/files.py",
@@ -373,8 +373,8 @@
     },
     {
       "path": "docs/PLUGINS.md",
-      "bytes": 2038,
-      "sha256": "313e71dfee1155d14f7dd952932491b20191237427c5ca46e72992066563b836"
+      "bytes": 2202,
+      "sha256": "6d187d52ca24c493809cffceea64558355a59d986c2b2889816e0cbd3f1c9cbb"
     },
     {
       "path": "docs/SECURITY.md",
@@ -433,13 +433,18 @@
     },
     {
       "path": "public/css/plugins.css",
-      "bytes": 859,
-      "sha256": "32006a91ecd026db7e2bdbbe2d1f51f41eb8d8d4cef5d72e2fae7ebcac16d691"
+      "bytes": 999,
+      "sha256": "5e575872f5b200bdd85acf658062eec8dd83b039599abd688acf55db8480daf3"
     },
     {
       "path": "public/images/logo.svg",
       "bytes": 375,
       "sha256": "92317d0de2a489e78a726f76eed181757ae1a147e3180acdef579fbd9159fa97"
+    },
+    {
+      "path": "public/images/wordpress-logo.png",
+      "bytes": 32944,
+      "sha256": "225ad93e01e4efd2944abefbb3d168e0494cc349cde573eaf1335a524b0e5bb9"
     },
     {
       "path": "public/index.php",
@@ -453,8 +458,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 50739,
-      "sha256": "9631141f266dde9a28e6d735a01eb05edfde2a00b506016ae1bbf9cf646103ae"
+      "bytes": 50748,
+      "sha256": "f118ef35facabec5a676f2f9e7110755b1707ec3441f402fab70ce8e9e7143e5"
     },
     {
       "path": "public/js/branding.js",
@@ -508,8 +513,8 @@
     },
     {
       "path": "public/js/plugins.js",
-      "bytes": 3843,
-      "sha256": "cb4b15e612de8b6a0929d7f15a23259b646751eb43c04b44090412e25dcdb696"
+      "bytes": 3908,
+      "sha256": "8d22f1dd85459e8304d5423195334d1c1779416966a6b75fd20d13b18de03d50"
     },
     {
       "path": "public/js/upload.js",
@@ -628,8 +633,8 @@
     },
     {
       "path": "resources/views/app.php",
-      "bytes": 1198,
-      "sha256": "33361385bff7f78a3091806929e830de392c8fd52a6e67b330c63e0865e5540b"
+      "bytes": 1221,
+      "sha256": "59dafcbad1b2e5bc9cf3e2be3a1624641f773a195f8e816d8133d159261053ec"
     },
     {
       "path": "scripts/apt-safe.sh",

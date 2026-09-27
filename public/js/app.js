@@ -1,6 +1,6 @@
 import{accountActions,accountDetails,databaseDetails,validity,fullDate}from'./management-ui.js';
 import{loadBranding,setBranding,brandMarkup,brandingForm,bindBranding}from'./branding.js';
-import{pluginsPage,bindPlugins}from'./plugins.js';
+import{pluginsPage,bindPlugins}from'./plugins.js?v=0.2.17';
 import{domainColumns,domainDetails}from'./domains.js';
 import{hostingPage,bindHosting}from'./hosting.js';
 import{api,setCsrf,esc,number,date,badge,ApiError}from'./api.js';
