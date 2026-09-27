@@ -9,6 +9,10 @@ export async function domainForm(ctx,preset='alias'){
  if(!sites.length)throw new Error('Crie um site e aguarde a ativação antes de vincular domínios.');
  return{title:preset==='subdomain'?'Criar subdomínio':'Adicionar domínio',html:`<div class="form-grid">${select('website_id','Site de hospedagem',sites.map(s=>[s.id,s.name]))}${select('type','Tipo',Object.entries(domainTypes))}<div class="full" data-domain-name>${input('domain','Domínio completo','placeholder="exemplo.com.br" maxlength="190"')}</div><div data-subdomain>${input('prefix','Nome do subdomínio','placeholder="blog" maxlength="63" pattern="[a-zA-Z0-9](([a-zA-Z0-9]|-){0,61}[a-zA-Z0-9])?"')}</div><div data-subdomain>${select('parent_domain','Domínio principal',[])}</div><div class="full" data-redirect>${input('target','Domínio de destino','placeholder="destino.com.br" maxlength="190"')}</div><p class="full notice" data-domain-preview aria-live="polite"></p><p class="full helper">Depois de criar, abra “Detalhes / DNS” para configurar o apontamento no seu provedor DNS. HTTPS é provisionado automaticamente; o certificado público depende do DNS e da validação.</p></div>`,
  bind(form){
+  const folder=document.createElement('div');folder.className='full';folder.dataset.subdomain='';
+  folder.innerHTML='<label>Nome da pasta<input class="input" name="document_root" maxlength="190" pattern="[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,189}" placeholder="blog" required></label><p class="helper">Pasta nova dentro de public_html. Use letras, números, ponto, hífen ou sublinhado, sem barras.</p>';
+  form.querySelector('[data-domain-preview]').before(folder);let customFolder=false;
+  form.elements.document_root.addEventListener('input',()=>{customFolder=form.elements.document_root.value!=='';});
   const e=form.elements;e.type.value=Object.hasOwn(domainTypes,preset)?preset:'alias';
   const toggle=(selector,on)=>form.querySelectorAll(selector).forEach(el=>{el.hidden=!on;el.querySelectorAll('input,select').forEach(i=>{i.disabled=!on;i.required=on;});});
   const parents=()=>{
@@ -20,7 +24,8 @@ export async function domainForm(ctx,preset='alias'){
    const sub=e.type.value==='subdomain',redirect=e.type.value==='redirect';
    toggle('[data-domain-name]',!sub);toggle('[data-subdomain]',sub);toggle('[data-redirect]',redirect);
    const host=`${e.prefix.value.toLowerCase()||'blog'}.${e.parent_domain.value}`;
-   form.querySelector('[data-domain-preview]').textContent=sub?(e.parent_domain.value?`${host} terá conteúdo próprio em public_html/${host}/. Usa o PHP e a conta do site selecionado.`:'Este site usa um IP e ainda não tem um domínio. Adicione primeiro um alias, como exemplo.com.br, e aguarde a ativação.'):
+   if(!customFolder)e.document_root.value=e.parent_domain.value?host:'';
+   form.querySelector('[data-domain-preview]').textContent=sub?(e.parent_domain.value?`${host} terá conteúdo próprio em public_html/${e.document_root.value}/. Inicialmente usa o PHP do site; depois você pode escolher outra versão em Alterar PHP.`:'Este site usa um IP e ainda não tem um domínio. Adicione primeiro um alias, como exemplo.com.br, e aguarde a ativação.'):
     redirect?'Redireciona permanentemente (301) para HTTPS no destino, preservando caminho e parâmetros.':e.type.value==='parked'?'Reserva o domínio com resposta vazia (204).':'Exibe o mesmo conteúdo da pasta public_html do site selecionado.';
    form.querySelector('[type=submit]').disabled=sub&&!e.parent_domain.value;
   };

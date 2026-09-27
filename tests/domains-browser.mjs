@@ -7,9 +7,10 @@ const sites=[{id:901,name:'example.test',status:'active'},{id:902,name:'192.0.2.
 const rows=[{id:10,name:'alias.test',status:'active',config:{type:'alias',domain:'example.test',website_id:901}},{id:11,name:'blog.example.test',status:'active',config:{type:'subdomain',domain:'example.test',website_id:901,document_root:'blog.example.test'}}];
 await page.route('**/api/v1/**',async route=>{
  const path=new URL(route.request().url()).pathname;let result={data:[]};
- if(path.endsWith('/auth/me'))result={user:{id:5,name:'Cliente',role:'CLIENT'},permissions:['domains.view','domains.create','domains.delete','websites.view','files.manage','jobs.view'],csrf:'test',quotas:{},servers:[],catalog:{}};
+ if(path.endsWith('/auth/me'))result={user:{id:5,name:'Cliente',role:'CLIENT'},permissions:['domains.view','domains.create','domains.delete','domains.edit','websites.edit','websites.view','files.manage','jobs.view'],csrf:'test',quotas:{},servers:[],catalog:{}};
  else if(path.endsWith('/websites'))result={data:sites};
- else if(path.endsWith('/domains/11/access'))result={...rows[1],dns:{type:'A',name:rows[1].name,value:'192.0.2.10'}};
+ else if(path.endsWith('/domains/11/access'))result={...rows[1],php_version:'8.3',php_inherited:true,dns:{type:'A',name:rows[1].name,value:'192.0.2.10'}};
+ else if(path.endsWith('/domains/11/php')){submitted.push(route.request().postDataJSON());result={message:'Troca agendada'};}
  else if(path.endsWith('/domains')){
   if(route.request().method()==='POST'){submitted.push(route.request().postDataJSON());result={message:'Criado'};}
   else result={data:rows};
@@ -17,15 +18,18 @@ await page.route('**/api/v1/**',async route=>{
  await route.fulfill({json:result});
 });
 try{
- await page.goto((process.env.VPM_TEST_URL||'http://127.0.0.1:8080')+'/#/domains');
+ await page.goto((process.env.VPM_TEST_URL||'http://127.0.0.1:8087')+'/#/domains');
  await page.getByRole('button',{name:'Criar subdomínio'}).click();
  await page.getByLabel('Nome do subdomínio',{exact:true}).fill('loja');
  assert.match(await page.locator('[data-domain-preview]').textContent(),/loja.example.test/);
  assert.equal(await page.getByLabel('Domínio completo',{exact:true}).isVisible(),false);
  assert.equal(await page.locator('select[name=parent_domain] option').count(),3);
+ assert.equal(await page.getByLabel('Nome da pasta',{exact:true}).inputValue(),'loja.example.test');
+ await page.getByLabel('Nome da pasta',{exact:true}).fill('minha_loja');
+ assert.match(await page.locator('[data-domain-preview]').textContent(),/public_html\/minha_loja\//);
  await page.getByRole('button',{name:'Criar',exact:true}).click();
  await page.waitForFunction(()=>!document.querySelector('#modal').open);
- assert.deepEqual(submitted[0],{website_id:901,type:'subdomain',prefix:'loja',parent_domain:'example.test'});
+ assert.deepEqual(submitted[0],{website_id:901,type:'subdomain',prefix:'loja',parent_domain:'example.test',document_root:'minha_loja'});
  await page.getByRole('button',{name:'Criar subdomínio'}).click();
  await page.getByLabel('Site de hospedagem').selectOption('902');
  assert.equal(await page.getByRole('button',{name:'Criar',exact:true}).isDisabled(),true);
@@ -46,6 +50,15 @@ try{
  await page.screenshot({path:'test-results/domain-dns.png'});
  await page.getByRole('button',{name:'Fechar',exact:true}).click();
  assert.equal(await page.locator('a[href="#/files?site=901"]').count(),2);
+ await page.locator('[data-domain-php="11"]').evaluate(el=>el.closest('details').open=true);
+ await page.locator('[data-domain-php="11"]').click();
+ await page.getByRole('heading',{name:'Alterar PHP do domínio'}).waitFor();
+ assert.equal(await page.getByLabel('Versão PHP',{exact:true}).inputValue(),'8.3');
+ await page.getByLabel('Versão PHP',{exact:true}).selectOption('7.4');
+ await page.screenshot({path:'test-results/domain-php.png'});
+ await page.getByRole('button',{name:'Alterar PHP',exact:true}).click();
+ await page.waitForFunction(()=>!document.querySelector('#modal').open);
+ assert.deepEqual(submitted[2],{php_version:'7.4'});
  await page.screenshot({path:'test-results/domains.png'});
  await page.getByRole('button',{name:'Criar subdomínio'}).click();
  await page.getByRole('heading',{name:'Criar subdomínio',exact:true}).waitFor();

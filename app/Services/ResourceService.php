@@ -72,7 +72,15 @@ final class ResourceService
                     }
                     if(!in_array($parent,$allowed,true)) throw new HttpError(422,'Selecione um domínio ativo vinculado a este site.');
                     $name=Input::domain($prefix.'.'.$parent); $c['parent_domain']=$parent;
-                    $c['document_root']=$name;
+                    $folder=$d['document_root']??'';
+                    if(!is_string($folder)) throw new HttpError(422,'Nome de pasta inválido.');
+                    $folder=trim($folder);if($folder==='')$folder=$name;
+                    if(!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,189}$/D',$folder)) throw new HttpError(422,'Use um nome de pasta com letras, números, ponto, hífen ou sublinhado, sem barras.');
+                    foreach($this->db->all('SELECT config_json FROM domains WHERE tenant_id=? AND deleted_at IS NULL',[$owner['tenant_id']]) as $row) {
+                        $existing=json_decode($row['config_json'],true);
+                        if(($existing['website_id']??null)===$c['website_id']&&($existing['document_root']??null)===$folder)throw new HttpError(409,'Esta pasta já está vinculada a outro subdomínio.');
+                    }
+                    $c['document_root']=$folder;
                 } else $name=Input::domain($d['domain']??'');
                 if(strlen($name)>190) throw new HttpError(422,'Domínio muito longo (máximo de 190 caracteres).');
                 foreach(['websites','domains'] as $table) if($this->db->one("SELECT id FROM `$table` WHERE server_id=? AND name=? AND deleted_at IS NULL",[$server,$name])) throw new HttpError(409,'Este domínio já está cadastrado no servidor.');

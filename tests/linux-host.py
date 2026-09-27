@@ -135,6 +135,34 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
             ops.files({**files,'action':'write','path':sub['alias']+'/version.php','content':base64.b64encode(b'<?php echo "subdomain:".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;').decode()})
             assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:'+version.encode())
             assert not fetch(p['domain'],'/version.php').endswith(b'subdomain:'+version.encode())
+            # Custom folder names and independent runtimes, including legacy inherited domains.
+            custom_sub={**files,'resource_id':52,'alias':'shop.'+p['domain'],'type':'subdomain','parent_domain':p['domain'],'document_root':'shop_files'}
+            ops.create_domain(custom_sub)
+            assert b'Subdominio ativo' in fetch(custom_sub['alias'])
+            assert (Path(site['public'])/'shop_files'/'index.html').is_file()
+            for folder in ['../escape','/etc','two/folders','.private','bad;name','shop_files']:
+                try:ops.create_domain({**custom_sub,'resource_id':53,'alias':'collision.'+p['domain'],'document_root':folder})
+                except (Rejected,RuntimeError):pass
+                else:raise AssertionError('Unsafe or occupied folder accepted')
+            assert b'Subdominio ativo' in fetch(custom_sub['alias'])
+            ops.change_domain_php({**sub,'php_version':'8.1'})
+            assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:8.1')
+            assert fetch(p['domain'],'/version.php').endswith(version.encode())
+            domain_before=ops.find('domain',sub);nginx_before=Path(domain_before['path']).read_bytes()
+            real_domain_run=run;failed_domain=[False]
+            def fail_domain_validation(args,**kwargs):
+                if args==['/usr/sbin/nginx','-t'] and not failed_domain[0]:
+                    failed_domain[0]=True;raise RuntimeError('Injected domain PHP validation failure')
+                return real_domain_run(args,**kwargs)
+            with patch('domain_php.run',side_effect=fail_domain_validation):
+                try:ops.change_domain_php({**sub,'php_version':'8.2'})
+                except RuntimeError:pass
+                else:raise AssertionError('Expected domain PHP rollback')
+            assert ops.find('domain',sub)==domain_before and Path(domain_before['path']).read_bytes()==nginx_before
+            assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:8.1')
+            assert not Path('/etc/php/8.2/fpm/pool.d/vpm-domain-999-51.conf').exists()
+            ops.delete_domain(custom_sub)
+            print('PASS custom subdomain folder, occupied/path rejection, independent PHP and rollback',flush=True)
             original=ops.find('site',p);before=Path(original['nginx']).read_text()
             real_run=run;injected=[False]
             def fail_validation(args,**kwargs):
@@ -175,15 +203,22 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
             print('PASS site editing, IP to domain, duplicate rejection, Nginx/PHP rollback and preserved files',flush=True)
             assert fetch(p['domain'],'/version.php').endswith(b'8.4')
             assert fetch('alias.example.invalid','/version.php').endswith(b'8.4')
-            assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:8.4')
+            assert fetch(sub['alias'],'/version.php').endswith(b'subdomain:8.1')
+            ops.change_domain_php({**files,'resource_id':50,'php_version':'8.2'})
+            assert fetch('alias.example.invalid','/version.php').endswith(b'8.2')
+            assert fetch(p['domain'],'/version.php').endswith(b'8.4')
             old_sub=sub['alias']
             ops.update_domain({**sub,'previous_domain':old_sub,'alias':'news.'+p['domain']})
-            assert fetch('news.'+p['domain'],'/version.php').endswith(b'subdomain:8.4')
+            assert fetch('news.'+p['domain'],'/version.php').endswith(b'subdomain:8.1')
+            ops.change_domain_php({**sub,'php_version':'8.3'})
+            assert fetch('news.'+p['domain'],'/version.php').endswith(b'subdomain:8.3')
+            assert not Path('/etc/php/8.1/fpm/pool.d/vpm-domain-999-51.conf').exists()
             assert (Path(site['public'])/old_sub/'version.php').is_file()
             print('PASS domain rename retains document root and PHP content',flush=True)
             ops.delete_domain(sub)
             assert (Path(site['public'])/sub['alias']/'version.php').is_file()
             assert not Path('/etc/nginx/conf.d/vpm-domain-999-51.conf').exists()
+            assert not Path('/etc/php/8.3/fpm/pool.d/vpm-domain-999-51.conf').exists()
             print('PASS subdomain separate content, HTTPS, PHP inheritance and preserved files on removal',flush=True)
             ops.delete_domain({**files,'resource_id':50})
         print('PASS PHP',version,'HTTPS, files, upload, trash and backup restoration',flush=True)

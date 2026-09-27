@@ -1,13 +1,13 @@
 import{accountActions,accountDetails,databaseDetails,validity,fullDate}from'./management-ui.js';
 import{loadBranding,setBranding,brandMarkup,brandingForm,bindBranding}from'./branding.js';
 import{pluginsPage,bindPlugins}from'./plugins.js?v=0.2.17';
-import{domainColumns,domainDetails}from'./domains.js';
-import{hostingPage,bindHosting}from'./hosting.js';
+import{domainColumns,domainDetails}from'./domains.js?v=0.2.18';
+import{hostingPage,bindHosting}from'./hosting.js?v=0.2.18';
 import{api,setCsrf,esc,number,date,badge,ApiError}from'./api.js';
 import{icon}from'./icons.js';
 import{fileManagerPage,bindFileManager}from'./file-manager.js';
 import{renderDashboard,empty}from'./dashboard.js';
-import{creationForm,field,select}from'./forms.js';
+import{creationForm,field,select}from'./forms.js?v=0.2.18';
 const root=document.querySelector('#app'),modal=document.querySelector('#modal');
 const NAV=[['dashboard','Dashboard','dashboard.view'],['servers','Servidores VPS','servers.view'],['users','Usuários','users.view'],['resellers','Revendedores','users.view'],['clients','Clientes','users.view'],['plans','Planos','plans.view'],['websites','Sites','websites.view'],['domains','Domínios','domains.view'],['databases','Bancos de Dados','databases.view'],['ssl_certificates','SSL / Certificados','ssl_certificates.view'],['files','Arquivos','files.manage'],['ftp_accounts','FTP / SFTP','ftp_accounts.view'],['backups','Backups','backups.view'],['firewall_rules','Firewall','firewall_rules.view'],['docker_containers','Docker','docker_containers.view'],['services','Serviços','services.manage'],['cron_jobs','Cron Jobs','cron_jobs.view'],['audit_logs','Logs','audit_logs.view'],['jobs','Operações','jobs.view'],['plugins','Plugins','websites.view'],['api','API',null],['settings','Configurações',null]];
 const descriptions={servers:'Sua infraestrutura, conectada em um só lugar.',users:'Controle o acesso e os recursos de cada conta.',resellers:'Gerencie suas revendas e clientes subordinados.',clients:'Contas de hospedagem e seus planos.',plans:'Defina recursos, permissões e limites para suas contas.',websites:'Gerencie os sites hospedados na sua infraestrutura.',domains:'Gerencie domínios, subdomínios, aliases e redirecionamentos.',databases:'Bancos MariaDB isolados por conta.',ssl_certificates:'Proteja seus sites com certificados Let’s Encrypt.',ftp_accounts:'Acesso SFTP restrito ao diretório de cada site.',backups:'Cópias dos arquivos dos sites e recuperação de dados.',firewall_rules:'Controle de tráfego com portas administrativas protegidas.',docker_containers:'Containers com imagens autorizadas e limites explícitos.',cron_jobs:'Agende scripts PHP ou comandos personalizados do seu site.',audit_logs:'Registro das ações e operações do seu ambiente.',jobs:'Acompanhe o processamento de operações pelo agente.'};
@@ -156,6 +156,11 @@ async function actions(event){
    if(can('databases.edit'))bindForm(modal.querySelector('form'),async f=>{const result=await api(`/databases/${id}/password`,{method:'POST',body:{password:f.elements.password.value}});modal.close();toast(result.message);});return;
   }
   if(target.dataset.php){showModal('Versão PHP do site',formShell(select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),target.dataset.version),'Alterar PHP'));bindForm(modal.querySelector('form'),async f=>{const r=await api(`/websites/${target.dataset.php}/php`,{method:'POST',body:{php_version:f.elements.php_version.value}});modal.close();toast(r.message);await navigate();});return;}
+  if(target.dataset.domainPhp){
+   const id=target.dataset.domainPhp,r=await api(`/domains/${id}/access`);
+   showModal('Alterar PHP do domínio',formShell(`<p><strong>${esc(r.name)}</strong></p><p class="helper">${r.php_inherited?'Atualmente acompanha o PHP do site. ':''}A versão escolhida será aplicada somente neste endereço. O site principal e os outros subdomínios manterão suas versões.</p>`+select('php_version','Versão PHP',['7.4','8.0','8.1','8.2','8.3','8.4'].map(v=>[v,'PHP '+v]),r.php_version),'Alterar PHP'));
+   bindForm(modal.querySelector('form'),async f=>{const result=await api(`/domains/${id}/php`,{method:'POST',body:{php_version:f.elements.php_version.value}});modal.close();toast(result.message);await navigate();});return;
+  }
   if(target.dataset.domainDetails){showModal('Detalhes do domínio / DNS',domainDetails(await api(`/domains/${target.dataset.domainDetails}/access`)));return;}
   if(target.dataset.create){await openCreate(target.dataset.create,target.dataset.domainType);return;}
   if(target.dataset.delete){const[k,id]=target.dataset.delete.split(':');await confirmAction('Excluir recurso',k==='domains'?`Remover o endereço ${target.dataset.name}? Os arquivos serão preservados e o DNS externo não será alterado.`:`Excluir ${target.dataset.name}? A operação será enviada ao agente e pode remover dados do servidor.`,async()=>{const r=await api(`/${k}/${id}`,{method:'DELETE'});toast(r.message);await navigate();},'Excluir');return;}

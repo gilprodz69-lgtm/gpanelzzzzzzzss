@@ -1,6 +1,6 @@
 import{api,esc,badge,date,number}from'./api.js';
 import{icon}from'./icons.js';
-import{domainTypes}from'./domains.js';
+import{domainTypes}from'./domains.js?v=0.2.18';
 const states={};
 const button=(attr,label,glyph,primary=false)=>`<button class="host-action${primary?' accent':''}" ${attr} title="${esc(label)}" aria-label="${esc(label)}">${icon(glyph)}</button>`;
 const link=(href,label,glyph,external=false)=>`<a class="host-action" href="${esc(href)}" title="${esc(label)}" aria-label="${esc(label)}" ${external?'target="_blank" rel="noopener"':''}>${icon(glyph)}</a>`;
@@ -27,6 +27,7 @@ function actions(kind,r,ctx){
  main+=site?button(`data-site-details="${r.id}"`,'Detalhes','settings'):(editing&&ctx.can('domains.edit')?button(`data-edit-domain="${r.id}"`,'Editar domínio','edit'):'');
  if(site&&ctx.can('metrics.view')&&ctx.me.user.role!=='CLIENT')main+=button(`data-host-metrics="${r.server_id}"`,'Métricas do servidor','chart');
  let more='';
+ if(!site&&active&&r.config.website_id&&['alias','subdomain'].includes(r.config.type)&&ctx.can('domains.edit')&&ctx.can('websites.edit'))more+=`<button data-domain-php="${r.id}">${icon('settings')}Alterar PHP</button>`;
  if(site&&active&&ctx.can('websites.edit'))more+=`<button data-php="${r.id}" data-version="${esc(r.config.php_version)}">${icon('settings')}Alterar PHP</button>`;
  if(ctx.can('jobs.view'))more+='<a href="#/jobs">'+icon('jobs')+'Ver operações</a>';
  if(['active','failed'].includes(r.status)&&ctx.can(kind+'.delete'))more+=`<button class="danger" data-delete="${kind}:${r.id}" data-name="${esc(r.name)}">${icon('trash')}Excluir</button>`;

@@ -299,6 +299,7 @@ check('domain editing preserves folder and scope, validates parent, duplicate an
 require __DIR__.'/phpmyadmin-unit.php';
 require __DIR__.'/login-two-factor.php';
 require __DIR__.'/plugins.php';
+require __DIR__.'/domain-php.php';
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

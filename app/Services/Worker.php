@@ -34,6 +34,11 @@ final class Worker
                         if($config['type']==='redirect')$config['target']=$payload['target'];
                         $this->db->query('UPDATE domains SET name=?,config_json=? WHERE id=? AND tenant_id=?',[$payload['alias'],json_encode($config),$job['resource_id'],$job['tenant_id']]);
                     }
+                    if($job['operation']==='change_domain_php') {
+                        $config=json_decode($this->db->scalar('SELECT config_json FROM domains WHERE id=? AND tenant_id=?',[$job['resource_id'],$job['tenant_id']]),true);
+                        $config['php_version']=$payload['php_version'];
+                        $this->db->query('UPDATE domains SET config_json=? WHERE id=? AND tenant_id=?',[json_encode($config),$job['resource_id'],$job['tenant_id']]);
+                    }
                     if($job['operation']==='change_php') {
                         $config=json_decode($this->db->scalar('SELECT config_json FROM websites WHERE id=? AND tenant_id=?',[$job['resource_id'],$job['tenant_id']]),true);
                         $config['php_version']=$payload['php_version'];

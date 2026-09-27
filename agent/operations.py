@@ -78,7 +78,7 @@ class Operations:
         self.catalog.commit()
 
     def execute(self, operation, p):
-        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'database_signon', 'install_wordpress', 'change_php', 'update_site', 'update_domain']
+        allowed = ['metrics', 'services', 'service_action', 'files', 'restore_backup', 'database_password', 'database_info', 'database_signon', 'install_wordpress', 'change_php', 'change_domain_php', 'update_site', 'update_domain']
         kinds = ['site', 'domain', 'database', 'ssl', 'sftp', 'backup', 'cron', 'firewall', 'container']
         allowed += [f'{verb}_{kind}' for verb in ['create', 'delete'] for kind in kinds]
         if operation not in allowed:
@@ -241,9 +241,12 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             prefix = host.removesuffix('.' + parent)
             if host != prefix + '.' + parent or not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', prefix):
                 raise Rejected('Invalid subdomain')
-            # Always derive the directory from the validated hostname, never from a caller path.
-            self.files({**p, 'action': 'mkdir', 'path': host})
-            self.files({**p, 'action': 'write', 'path': host + '/index.html',
+            folder=p.get('document_root',host)
+            if not isinstance(folder,str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,189}',folder):
+                raise Rejected('Invalid subdomain folder name')
+            # mkdir refuses existing paths, so no existing site content is overwritten.
+            self.files({**p, 'action': 'mkdir', 'path': folder})
+            self.files({**p, 'action': 'write', 'path': folder + '/index.html',
                         'content': base64.b64encode(b'<!doctype html><meta charset="utf-8"><h1>Subdominio ativo</h1>').decode()})
         if kind == 'redirect':
             content = f"server {{ listen 80; server_name {host}; return 301 https://{domain(p['target'])}$request_uri; }}\n"
@@ -256,7 +259,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
                 content = re.sub(r'    ssl_(?:certificate|certificate_key|protocols) [^;]+;\n', '', content).replace('listen 443 ssl;', 'listen 80;')
             content = content.replace('server_name ' + s['domain'] + ';', 'server_name ' + host + ';')
             if kind == 'subdomain':
-                content = content.replace('root ' + s['public'] + ';', 'root ' + s['public'] + '/' + host + ';')
+                content = content.replace('root ' + s['public'] + ';', 'root ' + s['public'] + '/' + folder + ';')
         cert, key = tls.local_certificate(host)
         content = tls.secure_config(content, host, cert, key)
         atomic_write(path, content)
@@ -264,7 +267,7 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
             run(['/usr/sbin/nginx', '-t']); reload_nginx()
         except Exception:
             path.unlink(missing_ok=True); raise
-        self.save('domain', p, {'domain': host, 'path': str(path), 'website_id': integer(p['website_id']), 'type': kind})
+        self.save('domain', p, {'domain': host, 'path': str(path), 'website_id': integer(p['website_id']), 'type': kind, 'document_root':folder if kind=='subdomain' else ''})
         result = {'domain': host, 'https': True, 'trusted': False}
         try:
             result.update(tls.upgrade_certificate(path, host, os.getenv('VPM_ACME_EMAIL', '')))
@@ -307,9 +310,12 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         return result
 
     def delete_domain(self, p):
-        d = self.find('domain', p); Path(d['path']).unlink(missing_ok=True)
-        run(['/usr/sbin/nginx', '-t']); reload_nginx(); self.forget('domain', p)
-        return {'message': 'Domain removed'}
+        import domain_php
+        return domain_php.remove(self,p)
+
+    def change_domain_php(self,p):
+        import domain_php
+        return domain_php.change(self,p)
 
     def create_database(self, p):
         name = identifier(p['name']); secret = password(p['password'])

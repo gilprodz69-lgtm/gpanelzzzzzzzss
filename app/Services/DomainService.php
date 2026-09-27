@@ -9,6 +9,23 @@ use App\Helpers\HttpError;
 final class DomainService
 {
     public function __construct(private Database $db,private Policy $policy) {}
+    public function changePhp(int $id,array $data): array {
+        $this->policy->require('domains.edit');$this->policy->require('websites.edit');
+        $version=Input::choice($data['php_version']??'',\App\Models\PhpVersions::ALL,'PHP');
+        return $this->db->transaction(function()use($id,$version){
+            $this->db->lockTenant((int)$this->policy->user['tenant_id']);
+            $resources=new ResourceService($this->db,$this->policy);$r=$resources->find('domains',$id);$c=json_decode($r['config_json'],true);
+            if(!in_array($c['type']??'',['alias','subdomain'],true))throw new HttpError(422,'Este domínio não serve conteúdo PHP.');
+            $site=$resources->find('websites',(int)$c['website_id']);
+            if($r['status']!=='active'||$site['status']!=='active')throw new HttpError(409,'Aguarde a operação atual do domínio e do site.');
+            $owner=$this->policy->owner((int)$r['owner_id']);$this->policy->server((int)$r['server_id'],(int)$owner['id']);
+            $payload=['tenant_id'=>(int)$r['tenant_id'],'owner_id'=>(int)$r['owner_id'],'resource_id'=>$id,'website_id'=>(int)$site['id'],'php_version'=>$version];
+            $job=(new Jobs($this->db))->enqueue($owner,(int)$r['server_id'],'change_domain_php',$payload,'domains',$id);
+            $this->db->query("UPDATE domains SET status='pending',updated_at=? WHERE id=? AND tenant_id=?",[time(),$id,$r['tenant_id']]);
+            Audit::write($this->db,$this->policy->user,'domains.php',$r['name'],'queued');
+            return ['job_id'=>$job,'message'=>'Troca de PHP deste domínio adicionada à fila. O PHP do site principal será mantido.'];
+        });
+    }
     public function update(int $id,array $data): array {
         $this->policy->require('domains.edit');
         if(array_diff(array_keys($data),['domain','target'])) throw new HttpError(422,'Edite somente o domínio e o destino.');
