@@ -65,7 +65,7 @@ def extract(archive, target):
             else:
                 with z.open(info) as inp,dest.open('xb') as out: shutil.copyfileobj(inp,out)
         for folder,dirs,files in os.walk(target):
-            Path(folder).chmod(0o2750)
+            # Keep inherited setgid: chmod as an owner outside www-data clears it.
             for name in files:(Path(folder)/name).chmod(0o640)
     if not all((target/p).is_file() for p in ['wp-load.php','wp-settings.php','wp-admin/includes/upgrade.php','wp-includes/version.php']):raise Rejected('Pacote WordPress incompleto.')
 
@@ -97,8 +97,10 @@ def install(ops,p):
             except Exception:raise Rejected('Não foi possível validar o banco. Confira a senha e as permissões do usuário.')
             if not result.get('empty'):raise Rejected('O banco já contém tabelas. Selecione um banco vazio exclusivo para WordPress.')
         check_database()
-        work=Path(tempfile.mkdtemp(prefix='.vpm-wordpress-',dir=public));work.chmod(0o2700)
-        stage=work/'content';stage.mkdir(mode=0o2750);stage.chmod(0o2750)
+        # mkdtemp/mkdir inherit the public directory's www-data group and setgid.
+        # The site account intentionally is not a member of the web-server group.
+        work=Path(tempfile.mkdtemp(prefix='.vpm-wordpress-',dir=public))
+        stage=work/'content';stage.mkdir(mode=0o750)
         database_started=False
         try:
             download(work/'package.zip');extract(work/'package.zip',stage);(work/'package.zip').unlink()
@@ -124,7 +126,6 @@ def install(ops,p):
             # WordPress may have created cache/upload directories with its default mask.
             for folder,dirs,files in os.walk(public):
                 dirs[:]=[d for d in dirs if not (Path(folder)/d).is_symlink() and d!=work.name]
-                if Path(folder)!=public:Path(folder).chmod(0o2750)
                 for name in files:
                     path=Path(folder)/name
                     if not path.is_symlink():path.chmod(0o640)
@@ -134,4 +135,16 @@ def install(ops,p):
             if not database_started:shutil.rmtree(work)
             # Once SQL installation starts, keep staging and DB intact for reconciliation.
             raise
-    return unprivileged(account,perform)
+    try:
+        return unprivileged(account,perform)
+    except RuntimeError as exc:
+        message=str(exc)
+        safe_messages=[
+            'O site já contém arquivos. Use um site vazio para instalar WordPress sem sobrescrever conteúdo.',
+            'O banco já contém tabelas. Selecione um banco vazio exclusivo para WordPress.',
+            'Não foi possível validar o banco. Confira a senha e as permissões do usuário.',
+            'Download do WordPress excedeu o prazo. Tente novamente mais tarde.',
+            'O conteúdo do site mudou durante a instalação. Publicação interrompida.'
+        ]
+        if message in safe_messages:raise Rejected(message) from None
+        raise Rejected('Não foi possível concluir a instalação do WordPress. Verifique a conexão com wordpress.org e os arquivos de preparação antes de repetir.') from None

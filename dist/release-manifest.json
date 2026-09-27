@@ -68,8 +68,8 @@
     },
     {
       "path": "agent/wordpress.py",
-      "bytes": 8491,
-      "sha256": "3543cfefdfe16a981bc9844ac50fbd6c3ca832b25c8ffc0f69d3652562e3da35"
+      "bytes": 9425,
+      "sha256": "3677b0aa2a7cf7f26553311a81aa7ed91e84d7bf443c996fd6813067e1c029cc"
     },
     {
       "path": "app/Controllers/ApiController.php",

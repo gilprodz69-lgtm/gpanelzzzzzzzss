@@ -14,7 +14,8 @@ try{
  $public='/srv/vpsmanager/t'.$u['tenant_id'].'/s'.$site.'/public_html';
  wpRequest('/files',['website_id'=>$site,'action'=>'write','path'=>'existing.txt','content'=>base64_encode('preserve-my-site')]);
  $data=['plugin'=>'wordpress','website_id'=>$site,'admin_email'=>'wordpress@example.invalid','admin_password'=>'WordPressTest!25841'];
- $failed=wpRequest('/plugins/install',$data);awaitJob($failed['job_id'],'failed');
+ $failed=wpRequest('/plugins/install',$data);$failure=awaitJob($failed['job_id'],'failed');
+ if(!str_contains($failure['error'],'site vazio'))throw new RuntimeException('Expected actionable occupied-site error');
  if(file_get_contents($public.'/existing.txt')!=='preserve-my-site')throw new RuntimeException('Existing file modified');
  if(file_exists($public.'/wp-config.php'))throw new RuntimeException('Installation overwrote occupied site');
  echo "PASS WordPress refuses occupied site without changing existing content\n";
@@ -27,6 +28,10 @@ try{
  $result=json_decode($j['result_json'],true);if(empty($result['version']))throw new RuntimeException('WordPress version absent');
  $dbName=$db->scalar('SELECT name FROM `databases` WHERE id=?',[$database]);$root=new PDO('mysql:unix_socket=/run/mysqld/mysqld.sock;dbname='.$dbName,'root','');
  if((int)$root->query('SELECT COUNT(*) FROM wp_users')->fetchColumn()!==1)throw new RuntimeException('Administrator missing');
+ $webGroup=posix_getgrnam('www-data')['gid'];
+ foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($public,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::SELF_FIRST) as $file){
+  if($file->getGroup()!==$webGroup||($file->isDir()&&($file->getPerms()&02000)===0))throw new RuntimeException('WordPress web-group inheritance lost: '.$file->getFilename());
+ }
  $c=curl_init('https://wordpress-ci.example.invalid/wp-login.php');$headers='';
  curl_setopt_array($c,[CURLOPT_RESOLVE=>['wordpress-ci.example.invalid:443:127.0.0.1'],CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>http_build_query(['log'=>$data['admin_email'],'pwd'=>$data['admin_password'],'wp-submit'=>'Log In']),CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_SSL_VERIFYHOST=>0,CURLOPT_HEADERFUNCTION=>function($c,$h)use(&$headers){$headers.=$h;return strlen($h);}]);curl_exec($c);$status=curl_getinfo($c,CURLINFO_RESPONSE_CODE);curl_close($c);
  if($status!==302||!str_contains($headers,'wordpress_logged_in_'))throw new RuntimeException('WordPress email/password login failed: '.$status);
