@@ -100,7 +100,19 @@ final class ResourceService
                     $c['schedule_id']=(int)$schedule['id'];
                 }
                 $name=$c['domain'].'-'.gmdate('Ymd-His').'-'.bin2hex(random_bytes(3)); break;
-            case 'cron_jobs': $schedule=\App\Validators\CronSchedule::validate($d['schedule']??''); $path=Input::text($d['path']??'','Script',5,190); if(!preg_match('/^[a-zA-Z0-9_\/-]+\.php$/D',$path)||str_contains($path,'..')||str_starts_with($path,'/')) throw new HttpError(422,'Use um caminho PHP relativo ao site.'); $c['schedule']=$schedule; $c['path']=$path; $name=$c['domain'].'-'.bin2hex(random_bytes(4)); break;
+            case 'cron_jobs':
+                $c['schedule']=\App\Validators\CronSchedule::validate($d['schedule']??'');
+                $c['command_type']=Input::choice($d['command_type']??'php',['php','custom'],'Tipo de comando');
+                if($c['command_type']==='php') {
+                    $path=Input::text($d['path']??'','Script',5,190);
+                    if(!preg_match('/^[a-zA-Z0-9_\/-]+\.php$/D',$path)||str_contains($path,'..')||str_starts_with($path,'/')) throw new HttpError(422,'Use um caminho como tasks/rotina.php. Para acessar uma URL, selecione Comando personalizado e use curl ou wget.');
+                    $c['path']=$path;
+                } else {
+                    $command=$d['command']??'';
+                    if(!is_string($command)||strlen($command)>4096||trim($command)===''||preg_match('/[\x00-\x1f\x7f]/',$command)) throw new HttpError(422,'Informe um comando em uma única linha, com até 4096 bytes.');
+                    $c['command']=trim($command);
+                }
+                $name=$c['domain'].'-'.bin2hex(random_bytes(4)); break;
             case 'firewall_rules': $c['port']=Input::integer($d['port']??null,'Porta',1,65535); if(in_array($c['port'],[22,80,443,9443],true)) throw new HttpError(422,'Porta administrativa ou essencial protegida.'); $c['protocol']=Input::choice($d['protocol']??'tcp',['tcp','udp'],'Protocolo'); $c['source']=Input::text($d['source']??'any','Origem'); if($c['source']!=='any'&&!filter_var($c['source'],FILTER_VALIDATE_IP)) throw new HttpError(422,'Use um IP ou any.'); $c['action']=Input::choice($d['action']??'allow',['allow','deny'],'Ação'); $name=implode('-',array_values($c)); break;
             case 'docker_containers': $name='u'.$owner['id'].'_'.Input::identifier($d['name']??''); $image=Input::text($d['image']??'','Imagem',3,190); if(!preg_match('/^[a-z0-9][a-z0-9._\/-]*:[a-zA-Z0-9_.-]+$/D',$image)) throw new HttpError(422,'Informe imagem:tag, sem opções adicionais.'); $c=['name'=>$name,'image'=>$image,'memory_mb'=>Input::integer($d['memory_mb']??256,'RAM',64,4096),'cpu'=>Input::integer($d['cpu']??1,'CPU',1,4)]; break;
             default: throw new HttpError(422,'Recurso inválido.');

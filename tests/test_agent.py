@@ -11,7 +11,7 @@ import time
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'agent'))
-from validation import domain, identifier, inside, cron, integer, Rejected
+from validation import domain, identifier, inside, cron, cron_command, integer, Rejected
 from server import Agent
 
 
@@ -40,6 +40,12 @@ class AgentTests(unittest.TestCase):
 
     def test_bool_not_an_id(self):
         with self.assertRaises(Rejected): integer(True)
+
+    def test_custom_cron_command(self):
+        for command in ["wget -O /dev/null 'https://example.test/cron?key=a%20b&task=all'", "printf '%s' 'hello'; id -u > who.txt", 'php task.php | tee result.txt']:
+            self.assertEqual(cron_command(command), command)
+        for command in [None, {}, '', '  ', 'x'*4097, 'é'*2049, 'id\nroot id', 'id\rnext', 'id\x00', 'id\t']:
+            with self.assertRaises(Rejected):cron_command(command)
 
     def test_hmac_and_replay(self):
         with tempfile.TemporaryDirectory() as directory:

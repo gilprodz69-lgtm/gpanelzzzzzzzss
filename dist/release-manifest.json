@@ -1,5 +1,5 @@
 {
-  "version": "0.2.12-preview",
+  "version": "0.2.13-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 15,
-      "sha256": "0def30b66ffed4556ae3fc141a57dc5a475e661c5229f95950ef42e9b7656bcf"
+      "sha256": "1b3646bef16d995327650336ae065b3d1983135b0a1ae608a1ca01368bfc347c"
     },
     {
       "path": "agent/files.py",
@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/operations.py",
-      "bytes": 36614,
-      "sha256": "21eedbe32a2b869478f5e65191f7af56910b93aec543eb9e8cdc8b03508bfbf3"
+      "bytes": 38441,
+      "sha256": "fc357f84d5c64f27a572553ecad379e600b4620ab49b5e4b2f0545d5d3b897f3"
     },
     {
       "path": "agent/runtime.py",
@@ -48,8 +48,8 @@
     },
     {
       "path": "agent/validation.py",
-      "bytes": 2862,
-      "sha256": "fa3bb078a9b4096c10bf6e833ea8a564247e0f7939a497df27aa818aa2546e2a"
+      "bytes": 3133,
+      "sha256": "a37e3baa75b365d7eb8ac998b7e38e97a18af750fbd0bc540ace4417eefd2d30"
     },
     {
       "path": "app/Controllers/ApiController.php",
@@ -73,8 +73,8 @@
     },
     {
       "path": "app/Models/Catalog.php",
-      "bytes": 2607,
-      "sha256": "52565fc7cae768031e24ffda1d26d45514801d87ce40d9382b5dfd3f43bb655e"
+      "bytes": 2632,
+      "sha256": "a52a7d678b4c4ff63d835a3b5989ed30e5f4facd0ca5e18a7e3d9716060de4e3"
     },
     {
       "path": "app/Models/PhpVersions.php",
@@ -143,8 +143,8 @@
     },
     {
       "path": "app/Services/ResourceService.php",
-      "bytes": 12565,
-      "sha256": "fe5081927331514539a37c4c5ee75dde5bf9486be698bf0abfd66006b572996f"
+      "bytes": 13233,
+      "sha256": "b33bc8d9cecc660b61d01942498c8b87daa971903c39723ebbf92caf985971e0"
     },
     {
       "path": "app/Services/ServerService.php",
@@ -302,9 +302,14 @@
       "sha256": "6bbc69ca2b98f2d68db362ef1591e915b94b522407d7f06193581c954b80ea30"
     },
     {
+      "path": "docs/hosting-compatibility.md",
+      "bytes": 3013,
+      "sha256": "503f3cef0826c95db90bd5a988f78d3f3297e0a4546285ed13a023736e647230"
+    },
+    {
       "path": "public/css/app.css",
-      "bytes": 24703,
-      "sha256": "4d9ee189c110d5bd02421b2c1ac18e25a2f60b161bf1f46b05f5a2bf2d6a9534"
+      "bytes": 25172,
+      "sha256": "5fb1b91e8c88eadeb10401ae5945b792c989d29194a3c2f35f56c5c33c3eef73"
     },
     {
       "path": "public/css/dashboard.css",
@@ -353,13 +358,13 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 48220,
-      "sha256": "de7c05452df592db264bb5c6b3edc69bf01947dae68f7500fe1e19e96ee296bd"
+      "bytes": 48395,
+      "sha256": "a8f26c2897d00bd8a0f435896798be74558b1f5d8c66c96bbe1c28d2da35f1d9"
     },
     {
       "path": "public/js/cron-schedule.js",
-      "bytes": 3832,
-      "sha256": "1abbcf82f5507072758865775d51d601a75b82c4b114209f95ae82e8be483206"
+      "bytes": 5280,
+      "sha256": "15417667351ede7078ef15e8acb786d79ccfa2283c0a4c69fbfbfdfcb3927992"
     },
     {
       "path": "public/js/dashboard.js",
@@ -383,8 +388,8 @@
     },
     {
       "path": "public/js/forms.js",
-      "bytes": 8475,
-      "sha256": "2562ba73feea5d9583ad5bf4dcc054c86496547f36419586fcb4ce13ed785e02"
+      "bytes": 8481,
+      "sha256": "a58e30063c07b42bf7db34f6902571e22b4cb52486ca6e49d9a9dfbbb8142b2c"
     },
     {
       "path": "public/js/hosting.js",
@@ -538,8 +543,8 @@
     },
     {
       "path": "scripts/install-runtime.sh",
-      "bytes": 3853,
-      "sha256": "99382ff803b942a28d565aa8188a15bc926bcf1062d69e88b47ec089785c984e"
+      "bytes": 3863,
+      "sha256": "16dce29b229dad5baa7339b05c9c1dceedb03ef07b707f3721d4946fefdb8906"
     },
     {
       "path": "scripts/install-ubuntu.sh",
@@ -563,8 +568,8 @@
     },
     {
       "path": "scripts/update.sh",
-      "bytes": 3380,
-      "sha256": "a7d9b3ee7eb07873805587b0be0fe4606e14ac49c2db3f28d71ca32c3403217a"
+      "bytes": 3397,
+      "sha256": "c852dc09981c59b98784d03a2870eb782c38b1c136ae2474cd6f505f683ebb60"
     },
     {
       "path": "scripts/upgrade-config.php",
@@ -573,8 +578,8 @@
     },
     {
       "path": "scripts/upgrade-ubuntu.sh",
-      "bytes": 6663,
-      "sha256": "0f9afc59147631beb7f1896c76d1b6931b95fde723cb3d4cb2e312945938d17d"
+      "bytes": 6680,
+      "sha256": "59f688040e230a203ae5b2b338322db81fffdef50939d733bb7282eeb0706dfe"
     },
     {
       "path": "scripts/wait-agent.py",

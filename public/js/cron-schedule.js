@@ -8,6 +8,14 @@ export const presets = [
  ['0 */12 * * *','A cada 12 horas'], ['daily','Todos os dias'],
  ['weekly','Toda semana'], ['monthly','Todo mês'], ['custom','Personalizado (avançado)']
 ];
+export function commandFields() {
+ return `<fieldset class="full cron-command"><legend>Tipo de comando</legend>
+  <div class="check-group"><label><input type="radio" name="command_type" value="php" checked> PHP</label><label><input type="radio" name="command_type" value="custom"> Comando personalizado</label></div>
+  <label data-cron-php>Script PHP relativo ao site<input class="input" name="path" placeholder="tasks/rotina.php" maxlength="190" spellcheck="false" required></label>
+  <label data-cron-command hidden>Comando para executar<input class="input" name="command" placeholder="curl -fsS 'https://exemplo.com/cron.php'" maxlength="4096" spellcheck="false" disabled></label>
+  <p class="helper" data-cron-command-help>Informe o caminho dentro de public_html, sem https://. Será usada a versão PHP do site.</p>
+ </fieldset>`;
+}
 export function scheduleFields() {
  return `<div class="full cron-schedule">
   <label>Frequência<select class="input" data-cron-preset>${presets.map(([v,label])=>`<option value="${v}" ${v==='*/5 * * * *'?'selected':''}>${label}</option>`).join('')}</select></label>
@@ -18,11 +26,19 @@ export function scheduleFields() {
   </div>
   <label data-cron-custom hidden>Expressão cron<input class="input" name="schedule" value="*/5 * * * *" maxlength="80" spellcheck="false"></label>
   <p class="helper" data-cron-preview aria-live="polite"></p>
-  <p class="helper">Usa o fuso horário da VPS e a versão PHP do site. O script deve existir dentro de public_html. Acompanhe a instalação em Operações.</p>
+  <p class="helper">Usa o fuso horário da VPS. Acompanhe a instalação em Operações.</p>
  </div>`;
 }
 export function bindSchedule(form, sites) {
  const q=s=>form.querySelector(s), preset=q('[data-cron-preset]'), schedule=form.elements.schedule;
+ const commandType=()=>{
+  const custom=form.elements.command_type.value==='custom';
+  for(const [selector,visible] of [['[data-cron-php]',!custom],['[data-cron-command]',custom]]) {
+   const label=q(selector),input=label.querySelector('input');label.hidden=!visible;input.disabled=!visible;input.required=visible;
+  }
+  q('[data-cron-command-help]').textContent=custom?'Executa pelo usuário do site, a partir de public_html. Para chamar uma URL, use curl -fsS ou wget -O /dev/null, com a URL entre aspas.':'Informe o caminho dentro de public_html, sem https://. Será usada a versão PHP do site.';
+ };
+ q('.cron-command').addEventListener('change',commandType);commandType();
  function update() {
   const type=preset.value, timed=['daily','weekly','monthly'].includes(type), custom=type==='custom';
   for(const [selector,visible] of [['[data-cron-clock]',timed],['[data-cron-week]',type==='weekly'],['[data-cron-month]',type==='monthly'],['[data-cron-custom]',custom]]) {

@@ -140,6 +140,20 @@ check('cron cannot target another account or a pending site',function()use($db,$
     denied(fn()=>$resource->create('cron_jobs',$data+['owner_id'=>$resellerId]),422);
 });
 
+check('custom cron preserves shell text and rejects malformed commands before queueing',function()use($db,$master,$server,$masterId){
+    $service=new ResourceService($db,$master);
+    $site=$db->one("SELECT * FROM websites WHERE owner_id=? AND status='active' ORDER BY id LIMIT 1",[$masterId]);
+    $data=['server_id'=>$server,'website_id'=>(int)$site['id'],'schedule'=>'* * * * *','command_type'=>'custom'];
+    $before=$db->scalar('SELECT COUNT(*) FROM jobs');
+    foreach(['',"id\nroot id","id\rnext","id\0",str_repeat('x',4097),['id']] as $command) denied(fn()=>$service->create('cron_jobs',$data+['command'=>$command]),422);
+    denied(fn()=>$service->create('cron_jobs',array_merge($data,['command_type'=>'root','command'=>'id'])),422);
+    eq($db->scalar('SELECT COUNT(*) FROM jobs'),$before);
+    $command="wget -O /dev/null 'https://example.test/cron.php?key=a%20b&job=all'";
+    $r=$service->create('cron_jobs',$data+['command'=>$command,'path'=>'ignored.php']);
+    $payload=json_decode(Crypto::decrypt($db->scalar('SELECT payload FROM jobs WHERE id=?',[$r['job_id']])),true);
+    eq($payload['command'],$command);eq($payload['command_type'],'custom');eq(isset($payload['path']),false);
+});
+
 check('reseller validity defaults to 30 days and supports custom renewal',function()use($db,$master,$plan){
     $service=new AccountService($db,$master);$now=time();
     $data=['role'=>'RESELLER','name'=>'Validity','email'=>'validity@example.com','password'=>'ValidityTest!12345','plan_id'=>$plan];

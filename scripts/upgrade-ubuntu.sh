@@ -94,7 +94,8 @@ stage='ativação'
 ln -s "$release_dir" /opt/vpsmanager/current.next
 mv -Tf /opt/vpsmanager/current.next /opt/vpsmanager/current
 systemctl daemon-reload
-systemctl restart php8.3-fpm vpsmanager-agent vpsmanager-worker
+systemctl reload php8.3-fpm
+systemctl restart vpsmanager-agent vpsmanager-worker
 systemctl enable --now vpsmanager-metrics.timer vpsmanager-certificates.timer
 systemctl reload nginx
 sleep 2

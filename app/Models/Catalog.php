@@ -10,7 +10,7 @@ final class Catalog
         'ssl_certificates' => ['label'=>'Certificados SSL','operation'=>'create_ssl','fields'=>['website_id','email']],
         'ftp_accounts' => ['label'=>'Contas SFTP','operation'=>'create_sftp','fields'=>['website_id','name','password']],
         'backups' => ['label'=>'Backups','operation'=>'create_backup','fields'=>['website_id']],
-        'cron_jobs' => ['label'=>'Tarefas agendadas','operation'=>'create_cron','fields'=>['website_id','schedule','path']],
+        'cron_jobs' => ['label'=>'Tarefas agendadas','operation'=>'create_cron','fields'=>['website_id','schedule','command_type','path','command']],
         'firewall_rules' => ['label'=>'Firewall','operation'=>'create_firewall','fields'=>['port','protocol','source','action']],
         'docker_containers' => ['label'=>'Containers','operation'=>'create_container','fields'=>['name','image','memory_mb','cpu']],
     ];

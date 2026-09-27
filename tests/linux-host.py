@@ -21,6 +21,7 @@ from validation import Rejected
 os.umask(0o077)
 ops=Operations()
 cron_fixtures=[]
+custom_cron_fixtures=[]
 def fetch(host, path='/', cookie=''):
     context=ssl.create_default_context(cafile=f'/etc/vpsmanager/tls/{host}/fullchain.pem')
     with socket.create_connection(('127.0.0.1',443),timeout=10) as raw:
@@ -116,6 +117,15 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         ops.create_cron(cron)
         site=ops.find('site',files,'website_id')
         cron_fixtures.append((p,cron,site,'8.4' if index==1 else version))
+        custom={**files,'resource_id':300+index,'schedule':'* * * * *','command_type':'custom',
+                'command':"printf '%s\\n' '100% ready' > custom-result.txt; id -u >> custom-result.txt; pwd >> custom-result.txt"}
+        ops.create_cron(custom)
+        custom_info=ops.find('cron',custom)
+        wrapper=Path(custom_info['wrapper'])
+        assert wrapper.stat().st_uid==0 and wrapper.stat().st_gid==pwd.getpwnam(site['username']).pw_gid
+        assert wrapper.stat().st_mode & 0o777==0o640
+        assert '100%' not in Path(custom_info['path']).read_text()
+        custom_cron_fixtures.append((custom,site,custom_info))
         if index==1:
             ops.create_domain({**files,'resource_id':50,'alias':'alias.example.invalid','type':'alias'})
             assert fetch('alias.example.invalid','/version.php').endswith(version.encode())
@@ -194,6 +204,15 @@ while True:
     if not pending:break
     assert time.monotonic()<deadline,('Cron did not execute with the correct PHP/user',pending)
     time.sleep(2)
+for custom,site,info in custom_cron_fixtures:
+    marker=Path(site['public'])/'custom-result.txt'
+    while not marker.exists() or len(marker.read_text().splitlines())<3:
+        assert time.monotonic()<deadline,'Custom cron did not execute'
+        time.sleep(1)
+    assert marker.read_text().splitlines()==['100% ready',str(pwd.getpwnam(site['username']).pw_uid),site['public']]
+    ops.delete_cron(custom)
+    assert not Path(info['path']).exists() and not Path(info['wrapper']).exists()
+print('PASS custom shell cron: literal percent, working directory, site UID, protected wrapper and removal',flush=True)
 for p,cron,site,version in cron_fixtures:
     path=Path(ops.find('cron',cron)['path'])
     assert path.stat().st_mode & 0o777==0o644

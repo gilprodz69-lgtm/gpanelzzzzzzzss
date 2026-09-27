@@ -1,4 +1,4 @@
-"""Strict validators shared by privileged operations. No shell grammar is accepted."""
+"""Strict validators shared by privileged operations; custom cron runs only as the site user."""
 import ipaddress
 import re
 from pathlib import Path
@@ -6,6 +6,12 @@ from pathlib import Path
 
 class Rejected(ValueError):
     pass
+
+
+def cron_command(value):
+    if not isinstance(value, str) or not value.strip() or len(value.encode('utf-8')) > 4096 or re.search(r'[\x00-\x1f\x7f]', value):
+        raise Rejected('Custom command must be one line, up to 4096 bytes')
+    return value.strip()
 
 
 def integer(value, minimum=1, maximum=2**31 - 1):

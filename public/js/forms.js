@@ -1,5 +1,5 @@
 import{api,esc}from'./api.js';
-import{scheduleFields,bindSchedule}from'./cron-schedule.js';
+import{commandFields,scheduleFields,bindSchedule}from'./cron-schedule.js';
 import{domainForm}from'./domains.js';
 const field=(name,label,type='text',extra='')=>`<label>${label}<input class="input" name="${name}" type="${type}" ${extra} required></label>`;
 const select=(name,label,items,selected='')=>`<label>${label}<select class="input" name="${name}" required>${items.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(selected)?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`;
@@ -25,7 +25,7 @@ export async function creationForm(kind,ctx,preset){
   fields+=Object.entries(limitsLabels).map(([key,label])=>field(`limit_${key}`,label,'number',`min="0" max="100000000" value="${key==='storage_mb'?20480:key==='traffic_mb'?102400:key==='ram_mb'?1024:key==='cpu'?1:10}"`)).join('');
   fields+='<div class="full"><label>Recursos incluídos</label><div class="check-group">'+[['ftp_accounts','SFTP'],['ssl_certificates','SSL'],['backups','Backups'],['files','Arquivos'],['docker_containers','Docker']].map(([key,label])=>`<label><input type="checkbox" name="feature_${key}" ${key!=='docker_containers'?'checked':''}>${label}</label>`).join('')+'</div></div>';
  }else{
-  title='Adicionar '+(ctx.me.catalog[kind]?.label||kind);
+  title=kind==='cron_jobs'?'Nova tarefa cron':'Adicionar '+(ctx.me.catalog[kind]?.label||kind);
   if(!ctx.me.servers.length)throw new Error('Cadastre ou autorize um servidor antes de criar este recurso.');
   fields=kind==='databases'&&ctx.me.user.role==='CLIENT'?'':select('server_id','Servidor',ctx.me.servers.map(s=>[s.id,s.name]));
   if(ctx.can('users.view')){const users=(await api('/users')).data.filter(u=>u.status==='active');fields+=select('owner_id','Proprietário',users.map(u=>[u.id,`${u.name} · ${u.role}`]),ctx.me.user.id);}
@@ -41,12 +41,12 @@ export async function creationForm(kind,ctx,preset){
    ssl_certificates:()=>field('email','E-mail de contato ACME','email',`value="${esc(ctx.me.user.email)}"`),
    ftp_accounts:()=>field('name','Nome do usuário SFTP','text','pattern="[a-z][a-z0-9_]{0,20}"')+field('password','Senha SFTP','password','minlength="12" maxlength="72" autocomplete="new-password"'),
    backups:()=>'<div class="full notice">Será criado um arquivo dos dados do site no servidor. Este fluxo não inclui o banco de dados.</div>',
-   cron_jobs:()=>scheduleFields()+field('path','Script PHP relativo ao site','text','placeholder="tasks/rotina.php"'),
+   cron_jobs:()=>commandFields()+scheduleFields(),
    firewall_rules:()=>field('port','Porta','number','min="1" max="65535"')+select('protocol','Protocolo',[['tcp','TCP'],['udp','UDP']])+field('source','Origem','text','value="any"')+select('action','Ação',[['allow','Permitir'],['deny','Bloquear']]),
    docker_containers:()=>field('name','Nome do container','text','pattern="[a-z][a-z0-9_]{0,31}"')+field('image','Imagem:tag','text','placeholder="nginx:stable-alpine"')+field('memory_mb','Limite de RAM (MB)','number','value="256" min="64" max="4096"')+field('cpu','Limite de CPU','number','value="1" min="1" max="4"')
   };
   fields+=schemas[kind]?.()||'';
-  note=kind==='docker_containers'?'Somente imagens autorizadas pelo operador. Containers são criados sem acesso à rede, sem volumes do host e sem privilégios.':kind==='ssl_certificates'?'O DNS precisa apontar para o servidor e a porta 80 deve estar acessível para a validação Let’s Encrypt.':'A operação será executada pelo agente. Acompanhe o resultado em Operações.';
+  note=kind==='cron_jobs'?'':kind==='docker_containers'?'Somente imagens autorizadas pelo operador. Containers são criados sem acesso à rede, sem volumes do host e sem privilégios.':kind==='ssl_certificates'?'O DNS precisa apontar para o servidor e a porta 80 deve estar acessível para a validação Let’s Encrypt.':'A operação será executada pelo agente. Acompanhe o resultado em Operações.';
  }
  return{title,bind(form){
   if(kind==='cron_jobs')bindSchedule(form,cronSites);

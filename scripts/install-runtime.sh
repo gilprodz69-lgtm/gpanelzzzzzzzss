@@ -3,7 +3,7 @@ set -Eeuo pipefail
 export DEBIAN_FRONTEND=noninteractive
 source "$(dirname -- "${BASH_SOURCE[0]}")/apt-safe.sh"
 vpm_apt update
-vpm_apt install -y software-properties-common ca-certificates python3-venv
+vpm_apt install -y software-properties-common ca-certificates python3-venv curl wget
 add-apt-repository --no-update -y ppa:ondrej/php
 vpm_apt update
 packages=()

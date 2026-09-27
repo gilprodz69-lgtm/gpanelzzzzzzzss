@@ -8,7 +8,7 @@ import sqlite3
 import tarfile
 import time
 from pathlib import Path
-from validation import integer, domain, identifier, choice, password, inside, cron, source, Rejected
+from validation import integer, domain, identifier, choice, password, inside, cron, cron_command, source, Rejected
 from runtime import run, atomic_write, unprivileged, wait_socket, reload_nginx
 import files
 import tls
@@ -516,15 +516,49 @@ php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,p
         return {'message': 'SFTP account removed'}
 
     def create_cron(self, p):
-        s = self.find('site', p, 'website_id'); schedule = cron(p['schedule']); script = inside(s['public'], p['path'])
-        if script.suffix != '.php' or not script.is_file() or not re.fullmatch(r'[a-zA-Z0-9_/.-]+', str(script)):
-            raise Rejected('PHP script must exist inside this site')
+        import pwd
+        import shlex
+        s = self.find('site', p, 'website_id'); schedule = cron(p['schedule'])
+        mode = choice(p.get('command_type', 'php'), ['php', 'custom'])
         path = Path(f"/etc/cron.d/vpm-{integer(p['tenant_id'])}-{integer(p['resource_id'])}")
-        atomic_write(path, f"SHELL=/bin/sh\nPATH=/usr/bin:/bin\n{schedule} {s['username']} /usr/bin/php{s['php']} {script} > /dev/null 2>&1\n", 0o644)
-        self.save('cron', p, {'path': str(path)}); return {'message': 'Cron installed'}
+        if path.exists():raise Rejected('Cron already exists')
+        wrapper = None
+        if mode == 'php':
+            script = inside(s['public'], p['path'])
+            if script.suffix != '.php' or not script.is_file() or not re.fullmatch(r'[a-zA-Z0-9_/.-]+', str(script)):
+                raise Rejected('PHP script must exist inside this site')
+            command = f"/usr/bin/php{s['php']} {script}"
+        else:
+            custom = cron_command(p.get('command'))
+            # Never place user shell text into /etc/cron.d (newlines, %, assignments).
+            # Cron launches this root-owned wrapper with the site's UID, never root.
+            account = pwd.getpwnam(identifier(s['username']))
+            if account.pw_uid == 0:raise Rejected('Root cannot own a hosted cron')
+            content='#!/bin/sh\numask 027\ncd -- '+shlex.quote(s['public'])+' || exit 1\n'+custom+'\n'
+            # Parse without executing even substitutions, as the unprivileged account.
+            run(['/bin/sh','-n'],input_text=content,user=account)
+            directory = Path('/etc/vpsmanager-cron')
+            if directory.is_symlink():raise Rejected('Unsafe cron directory')
+            directory.mkdir(mode=0o755,exist_ok=True)
+            os.chown(directory,0,0);directory.chmod(0o755)
+            wrapper = directory/(path.name+'.sh')
+            if wrapper.exists() or wrapper.is_symlink():raise Rejected('Cron wrapper already exists')
+            atomic_write(wrapper,content,0o640)
+            os.chown(wrapper,0,account.pw_gid)
+            command = f'/bin/sh {wrapper}'
+        try:
+            atomic_write(path, f"SHELL=/bin/sh\nPATH=/usr/local/bin:/usr/bin:/bin\n{schedule} {s['username']} {command} > /dev/null 2>&1\n", 0o644)
+            self.save('cron', p, {'path': str(path), 'command_type': mode, 'website_id': p['website_id'], **({'wrapper':str(wrapper)} if wrapper else {})})
+        except Exception:
+            path.unlink(missing_ok=True)
+            if wrapper:wrapper.unlink(missing_ok=True)
+            raise
+        return {'message': 'Cron installed'}
 
     def delete_cron(self, p):
-        d = self.find('cron', p); Path(d['path']).unlink(missing_ok=True); self.forget('cron', p); return {'message': 'Cron removed'}
+        d = self.find('cron', p); Path(d['path']).unlink(missing_ok=True)
+        if d.get('wrapper'):Path(d['wrapper']).unlink(missing_ok=True)
+        self.forget('cron', p); return {'message': 'Cron removed'}
 
     def create_firewall(self, p):
         port = integer(p['port'], 1, 65535); protocol = choice(p['protocol'], ['tcp', 'udp']); action = choice(p['action'], ['allow', 'deny']); origin = source(p['source'])

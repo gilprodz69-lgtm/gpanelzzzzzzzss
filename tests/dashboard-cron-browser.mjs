@@ -10,7 +10,7 @@ await page.route('**/api/v1/auth/me',async route=>{const response=await route.fe
 await page.route('**/api/v1/dashboard',route=>route.fulfill({json:{servers,counts:{users:2,websites:3,databases:1,ssl_certificates:1},activity:[],pending_jobs:1}}));
 await page.route('**/api/v1/servers/*/metrics?*',route=>route.fulfill({json:{data:[{created_at:now-600,cpu:10,ram:22,disk:10},{created_at:now,cpu:12,ram:25,disk:10}]}}));
 const password=(await readFile('storage/LOCAL-ACCESS.txt','utf8')).match(/Senha: (.+)/)[1].trim();
-await page.goto('http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
+await page.goto(process.env.VPM_TEST_URL||'http://127.0.0.1:8080');await page.getByLabel('E-mail',{exact:true}).fill('admin@vpsmanager.local');await page.getByLabel('Senha',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar no painel'}).click();await page.getByRole('heading',{name:'Olá, Administrador!'}).waitFor();
 for(const title of ['Últimos Sites Criados','Uso por Servidor','Atividades Recentes'])assert.equal(await page.getByRole('heading',{name:title,exact:true}).count(),0);
 for(const [width,height] of [[1920,950],[1536,864],[1440,900],[1366,768],[1280,720],[1280,650],[1024,768]]) {
  await page.setViewportSize({width,height});await page.waitForTimeout(50);
@@ -47,6 +47,23 @@ await page.locator('select[name=server_id]').selectOption('1');assert.equal(awai
 await preset.selectOption('weekly');await page.getByLabel('Script PHP relativo ao site').fill('tasks/rotina.php');
 await page.screenshot({path:'test-results/cron-presets.png',fullPage:true});
 await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});
-assert.deepEqual(created,[{server_id:1,owner_id:Number(owner),website_id:801,schedule:'30 8 * * 1',path:'tasks/rotina.php'}]);
+assert.deepEqual(created,[{server_id:1,owner_id:Number(owner),website_id:801,command_type:'php',schedule:'30 8 * * 1',path:'tasks/rotina.php'}]);
+await page.locator('[data-create=cron_jobs]').click();await page.locator('dialog').waitFor({state:'visible'});
+await page.getByLabel('Comando personalizado',{exact:true}).check();
+assert.equal(await page.locator('input[name=path]').isDisabled(),true);
+const command="wget -O /dev/null 'https://example.test/cron.php?token=test&mode=all'";
+await page.getByLabel('Comando para executar',{exact:true}).fill(command);
+await page.locator('[data-cron-preset]').selectOption('* * * * *');
+await page.screenshot({path:'test-results/cron-custom.png',fullPage:true});
+await page.locator('dialog button[type=submit]').click();await page.locator('dialog').waitFor({state:'hidden'});
+assert.equal(created[1].command_type,'custom');assert.equal(created[1].command,command);assert.equal(created[1].schedule,'* * * * *');assert.equal('path' in created[1],false);
+await page.locator('[data-create=cron_jobs]').click();await page.locator('dialog').waitFor({state:'visible'});
+await page.getByLabel('Comando personalizado',{exact:true}).check();
+await page.getByLabel('Comando para executar',{exact:true}).fill(command);
+await page.getByLabel('PHP',{exact:true}).check();
+assert.equal(await page.locator('input[name=command]').isDisabled(),true);
+assert.equal(await page.locator('input[name=path]').isDisabled(),false);
+await page.setViewportSize({width:390,height:844});
+assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
 assert.deepEqual(errors,[]);await browser.close();
 console.log('PASS compact dashboard on seven desktop sizes, unclipped captions, mobile width, all cron presets, site selection, custom schedule and create payload');
