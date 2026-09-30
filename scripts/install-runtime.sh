@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 export DEBIAN_FRONTEND=noninteractive
+install -m 0644 "$(dirname -- "${BASH_SOURCE[0]}")/../deploy/nginx-performance.conf" /etc/nginx/conf.d/vpm-performance.conf
 source "$(dirname -- "${BASH_SOURCE[0]}")/apt-safe.sh"
 vpm_apt update
 vpm_apt install -y software-properties-common ca-certificates python3-venv curl wget

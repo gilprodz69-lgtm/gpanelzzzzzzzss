@@ -40,6 +40,18 @@ with patch('tls.issue',side_effect=RuntimeError('ACME is exercised separately ag
         files={**p,'website_id':index}
         ops.files({**files,'action':'write','path':'version.php','content':base64.b64encode(b'<?php echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;').decode()})
         assert fetch(p['domain'],'/version.php').endswith(version.encode())
+        if index==1:
+            import gzip
+            asset=b'.example { color: #123456; padding: 12px; }\n'*400
+            ops.files({**files,'action':'write','path':'performance.css','content':base64.b64encode(asset).decode()})
+            c=http.client.HTTPSConnection('127.0.0.1',context=ssl._create_unverified_context(),timeout=10)
+            c.request('GET','/performance.css',headers={'Host':p['domain'],'Accept-Encoding':'gzip'})
+            response=c.getresponse();compressed=response.read()
+            assert response.status==200 and response.getheader('Content-Encoding')=='gzip'
+            assert 'Accept-Encoding' in response.getheader('Vary','')
+            assert gzip.decompress(compressed)==asset and len(compressed)<len(asset)/2
+            c.close();assert fetch(p['domain'],'/performance.css')==asset
+            print('PASS asset gzip transfer reduction, Vary header and identical decoded content',flush=True)
         session_code=b'<?php session_start(); $_SESSION["count"]=($_SESSION["count"]??0)+1; echo $_SESSION["count"].":".(is_writable(ini_get("upload_tmp_dir"))?"ok":"bad");'
         ops.files({**files,'action':'write','path':'session-probe.php','content':base64.b64encode(session_code).decode()})
         assert fetch(p['domain'],'/session-probe.php',f'PHPSESSID=citest{index}').endswith(b'1:ok')

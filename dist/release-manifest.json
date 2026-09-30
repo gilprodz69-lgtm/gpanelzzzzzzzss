@@ -1,5 +1,5 @@
 {
-  "version": "0.2.18-preview",
+  "version": "0.2.19-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 15,
-      "sha256": "ae39b8c1d576ed50ab0e8574b03d12fb6726352a55e5d24bd613890d843f146d"
+      "sha256": "a2b0a2741e19a53165e6fbb4d7b68006ef49c94197207d42f5010b02f5b38b30"
     },
     {
       "path": "agent/domain_php.py",
@@ -277,6 +277,11 @@
       "sha256": "25492ad411527133ed9129c51af9d24d0515075abcbbaaea84c121939fb26791"
     },
     {
+      "path": "deploy/nginx-performance.conf",
+      "bytes": 274,
+      "sha256": "ad20203ac7234d2fb65764be0172b4e70c77584bf1107e0abb318a792a2ae941"
+    },
+    {
       "path": "deploy/nginx-upload.conf",
       "bytes": 254,
       "sha256": "af860dd4233baa5d940b602f4432637df9d64b7deba70fb97808876abc0b13ee"
@@ -405,6 +410,11 @@
       "path": "docs/hosting-compatibility.md",
       "bytes": 3013,
       "sha256": "503f3cef0826c95db90bd5a988f78d3f3297e0a4546285ed13a023736e647230"
+    },
+    {
+      "path": "docs/performance.md",
+      "bytes": 1247,
+      "sha256": "d11543f01e9f65bb01d93280f4e45afc3c39f5ed1f009427c867424f006170e5"
     },
     {
       "path": "public/css/app.css",
@@ -663,8 +673,8 @@
     },
     {
       "path": "scripts/install-runtime.sh",
-      "bytes": 5499,
-      "sha256": "5da50eea82154a9373de12be8b752fe83dc123868f72f0667fb1ffec6b96f422"
+      "bytes": 5623,
+      "sha256": "dd38ca7d87c01ea86a92564de782cec21865d5b3041ec57325820aa917362392"
     },
     {
       "path": "scripts/install-ubuntu.sh",
