@@ -2,12 +2,13 @@ import{chromium}from'playwright';
 import assert from'node:assert/strict';
 const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:1786,height:900}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
-const sites=Array.from({length:12},(_,i)=>({id:i+1,name:`site${String(i+1).padStart(2,'0')}.example.com`,owner_id:1,server_id:i%2+1,status:i===11?'failed':'active',created_at:1789900000+i,config:{php_version:'8.2'}}));
+const sites=Array.from({length:12},(_,i)=>({id:i+1,name:`site${String(i+1).padStart(2,'0')}.example.com`,owner_id:1,owner_name:i===0?'Revenda <Nome>':'Administrador',server_id:i%2+1,status:i===11?'failed':'active',created_at:1789900000+i,config:{php_version:'8.2'}}));
 const domains=[{id:1,name:'example.com',owner_id:1,server_id:1,status:'active',created_at:1789900000,config:{type:'alias',website_id:1,domain:sites[0].name}},{id:2,name:'blog.example.com',owner_id:1,server_id:1,status:'active',created_at:1789900001,config:{type:'subdomain',website_id:1,domain:sites[0].name,document_root:'blog.example.com',parent_domain:'example.com'}}];
 let role='MASTER',edited;
 await page.route('**/api/v1/**',async route=>{const path=new URL(route.request().url()).pathname;let result={data:[]};
  if(path.endsWith('/auth/me'))result={user:{id:1,name:'Administrador',role},permissions:['websites.view','websites.create','websites.edit','websites.delete','domains.view','domains.create','domains.edit','domains.delete','files.manage','metrics.view','jobs.view'],csrf:'test',quotas:{},servers:[{id:1,name:'BR-SERVER',address:'191.252.212.254',os:'Ubuntu 24.04'},{id:2,name:'US-SERVER',address:'192.0.2.20'}],catalog:{}};
  else if(path.endsWith('/websites'))result={data:sites};
+ else if(path.match(/\/websites\/\d+$/))result={data:sites.find(s=>s.id===Number(path.split('/').at(-1)))};
  else if(path.endsWith('/domains'))result={data:domains};
  else if(path.endsWith('/domains/2')){if(route.request().method()==='PATCH'){edited=route.request().postDataJSON();result={message:'Atualização enviada'};}else result={data:domains[1]};}
  else if(path.includes('/metrics'))result={data:[{cpu:12,ram:30,disk:20,created_at:1789900000}]};
@@ -17,6 +18,11 @@ const base=process.env.VPM_TEST_URL||'http://127.0.0.1:8080';
 try{
  await page.goto(base+'/#/websites');await page.locator('[data-host-results] tbody tr').first().waitFor();
  assert.equal(await page.locator('[data-host-results] tbody tr').count(),10);
+ await page.getByLabel('Pesquisar nesta lista').fill('Revenda');assert.equal(await page.locator('tbody tr').count(),1);
+ assert.match(await page.locator('tbody tr').textContent(),/Revenda <Nome>/);assert.equal(await page.locator('tbody tr nome').count(),0);
+ await page.getByRole('button',{name:'Detalhes',exact:true}).click();await page.getByRole('heading',{name:'Detalhes do site'}).waitFor();assert.match(await page.locator('#modal').textContent(),/Revenda <Nome>/);await page.getByRole('button',{name:'Fechar',exact:true}).click();
+ await page.getByRole('button',{name:'Visualiza\u00e7\u00e3o em grade'}).click();assert.match(await page.locator('.host-grid').textContent(),/Revenda <Nome>/);
+ await page.getByRole('button',{name:'Visualiza\u00e7\u00e3o em lista'}).click();await page.getByRole('button',{name:'Limpar pesquisa'}).click();
  await page.getByRole('button',{name:'Próxima página',exact:true}).click();assert.equal(await page.locator('tbody tr').count(),2);
  await page.getByLabel('Filtrar servidor').selectOption('1');assert.equal(await page.locator('tbody tr').count(),6);
  await page.getByLabel('Pesquisar nesta lista').fill('site01');assert.equal(await page.locator('tbody tr').count(),1);

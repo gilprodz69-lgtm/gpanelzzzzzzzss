@@ -46,6 +46,20 @@ check('site reservation and job are atomic',function()use($resource,$server,$cli
 check('site in another tenant is hidden',fn()=>denied(fn()=>(new ResourceService($db,$outsider))->find('websites',1),404));
 check('site ownership IDOR rejected',fn()=>denied(fn()=>$resource->create('websites',['server_id'=>$server,'owner_id'=>$outsiderId,'domain'=>'forbidden.example.com']),404));
 check('pending sites count toward reseller quota',function()use($resource,$server,$resellerId,$clientId){$resource->create('websites',['server_id'=>$server,'owner_id'=>$resellerId,'domain'=>'reseller.example.com']);denied(fn()=>$resource->create('websites',['server_id'=>$server,'owner_id'=>$clientId,'domain'=>'excess.example.com']),409);});
+check('site owners resolve actual account names without exposing credentials',function()use($db,$resource,$master,$client,$resellerId,$clientId){
+    $rows=$resource->list('websites');$names=array_column($rows,'owner_name','owner_id');
+    eq($names[$resellerId],'reseller');eq($names[$clientId],'client');
+    foreach($rows as $row){eq(isset($row['password_hash']),false);eq(isset($row['email']),false);eq($resource->present($resource->find('websites',(int)$row['id']))['owner_name'],$row['owner_name']);}
+    $clientRows=(new ResourceService($db,$client))->list('websites');eq(count($clientRows),1);eq($clientRows[0]['owner_name'],'client');
+    eq(count((new ResourceService($db,$master))->list('websites')),2);
+    $db->query('UPDATE users SET name=? WHERE id=?',['Revenda atualizada',$resellerId]);
+    eq(array_column($resource->list('websites'),'owner_name','owner_id')[$resellerId],'Revenda atualizada');
+    $db->query('UPDATE users SET name=? WHERE id=?',['reseller',$resellerId]);
+});
+check('site owner names preserve tenant and reseller isolation',function()use($db,$outsider,$rivalId,$user){
+    eq((new ResourceService($db,$outsider))->list('websites'),[]);
+    eq((new ResourceService($db,new Policy($db,$user($rivalId))))->list('websites'),[]);
+});
 check('failed creation does not insert site or job',function()use($db){eq((int)$db->scalar('SELECT COUNT(*) FROM websites'),2);eq((int)$db->scalar('SELECT COUNT(*) FROM jobs'),2);});
 check('database credential encrypted in job',function()use($resource,$server,$db){$r=$resource->create('databases',['server_id'=>$server,'name'=>'app','password'=>'DatabaseSecret!123']);$job=$db->one('SELECT * FROM jobs WHERE id=?',[$r['job_id']]);eq(str_contains($job['payload'],'DatabaseSecret!123'),false);eq(json_decode(Crypto::decrypt($job['payload']),true)['password'],'DatabaseSecret!123');$record=$db->one('SELECT * FROM `databases` WHERE id=?',[$r['id']]);eq(str_contains($record['config_json'],'DatabaseSecret'),false);});
 check('SSL requires active owned site',fn()=>denied(fn()=>$resource->create('ssl_certificates',['server_id'=>$server,'owner_id'=>$clientId,'website_id'=>1,'email'=>'test@example.com']),422));

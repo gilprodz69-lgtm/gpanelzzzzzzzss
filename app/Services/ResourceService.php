@@ -11,15 +11,21 @@ final class ResourceService
     public function __construct(private Database $db,private Policy $policy) {}
     public function list(string $kind): array {
         $this->kind($kind); $this->policy->require("$kind.view"); [$where,$args]=$this->policy->scope();
-        return array_map($this->present(...),$this->db->all("SELECT * FROM `$kind` WHERE $where AND deleted_at IS NULL ORDER BY id DESC LIMIT 500",$args));
+        $columns=$this->columns($kind);
+        return array_map($this->present(...),$this->db->all("SELECT $columns FROM `$kind` WHERE $where AND deleted_at IS NULL ORDER BY id DESC LIMIT 500",$args));
     }
     public function find(string $kind,int $id): array {
         $this->kind($kind); [$where,$args]=$this->policy->scope();
-        $r=$this->db->one("SELECT * FROM `$kind` WHERE $where AND id=? AND deleted_at IS NULL",array_merge($args,[$id]));
+        $columns=$this->columns($kind);
+        $r=$this->db->one("SELECT $columns FROM `$kind` WHERE $where AND id=? AND deleted_at IS NULL",array_merge($args,[$id]));
         if(!$r) throw new HttpError(404,'Recurso não encontrado.'); return $r;
     }
     private function kind(string $kind): void { if(!isset(Catalog::RESOURCES[$kind])) throw new HttpError(404,'Módulo não encontrado.'); }
     public function present(array $r): array { $r['config']=json_decode($r['config_json'],true); unset($r['config_json']); return $r; }
+    private function columns(string $kind): string {
+        // Resolve only the actual site's owner, within its tenant, without exposing account credentials.
+        return $kind==='websites' ? '*, (SELECT name FROM users WHERE users.id=websites.owner_id AND users.tenant_id=websites.tenant_id) AS owner_name' : '*';
+    }
     public function create(string $kind,array $data): array {
         $this->kind($kind); $this->policy->require("$kind.create");
         if($kind==='domains') {

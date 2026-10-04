@@ -2,7 +2,7 @@ import{accountActions,accountDetails,databaseDetails,validity,fullDate}from'./ma
 import{loadBranding,setBranding,brandMarkup,brandingForm,bindBranding}from'./branding.js';
 import{pluginsPage,bindPlugins}from'./plugins.js?v=0.2.17';
 import{domainColumns,domainDetails}from'./domains.js?v=0.2.18';
-import{hostingPage,bindHosting}from'./hosting.js?v=0.2.18';
+import{hostingPage,bindHosting}from'./hosting.js?v=0.2.20';
 import{api,setCsrf,esc,number,date,badge,ApiError}from'./api.js';
 import{icon}from'./icons.js';
 import{fileManagerPage,bindFileManager}from'./file-manager.js';
@@ -133,7 +133,7 @@ async function actions(event){
    showModal('Métricas do servidor',last?`<p class="helper">Consumo total do servidor compartilhado pelos sites. Última coleta: ${esc(fullDate(last.created_at))}.</p><dl class="details-grid"><div><dt>CPU</dt><dd>${number(+Number(last.cpu).toFixed(1))}%</dd></div><div><dt>RAM</dt><dd>${number(+Number(last.ram).toFixed(1))}%</dd></div><div><dt>Disco</dt><dd>${number(+Number(last.disk).toFixed(1))}%</dd></div></dl>`:'<p class="helper">Nenhuma coleta na última hora. Verifique o agente e tente atualizar.</p>');return;
   }
   if(target.dataset.copyValue!==undefined){await navigator.clipboard.writeText(target.dataset.copyValue);toast('Copiado.');return;}
-  if(target.dataset.siteDetails){const {data:r}=await api('/websites/'+target.dataset.siteDetails);showModal('Detalhes do site',`<dl class="details-grid"><div><dt>Site</dt><dd>${esc(r.name)}</dd></div><div><dt>Status</dt><dd>${badge(r.status)}</dd></div><div><dt>PHP</dt><dd>${esc(r.config.php_version)}</dd></div><div><dt>Pasta pública</dt><dd>public_html</dd></div><div><dt>Criado em</dt><dd>${esc(fullDate(r.created_at))}</dd></div></dl>${r.status==='active'&&can('files.manage')?`<a class="button primary" data-action="close-modal" href="#/files?site=${r.id}">Gerenciar arquivos deste site</a>`:''}`);return;}
+  if(target.dataset.siteDetails){const {data:r}=await api('/websites/'+target.dataset.siteDetails);showModal('Detalhes do site',`<dl class="details-grid"><div><dt>Site</dt><dd>${esc(r.name)}</dd></div><div><dt>Proprietário</dt><dd>${esc(r.owner_name||'Conta #'+r.owner_id)}</dd></div><div><dt>Status</dt><dd>${badge(r.status)}</dd></div><div><dt>PHP</dt><dd>${esc(r.config.php_version)}</dd></div><div><dt>Pasta pública</dt><dd>public_html</dd></div><div><dt>Criado em</dt><dd>${esc(fullDate(r.created_at))}</dd></div></dl>${r.status==='active'&&can('files.manage')?`<a class="button primary" data-action="close-modal" href="#/files?site=${r.id}">Gerenciar arquivos deste site</a>`:''}`);return;}
   if(target.dataset.userDetails){showModal('Detalhes da conta',accountDetails(await api('/users/'+target.dataset.userDetails)));return;}
   if(target.dataset.renewUser){
    const id=target.dataset.renewUser,{user}=await api('/users/'+id);
