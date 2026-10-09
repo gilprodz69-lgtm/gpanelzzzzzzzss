@@ -314,6 +314,7 @@ require __DIR__.'/phpmyadmin-unit.php';
 require __DIR__.'/login-two-factor.php';
 require __DIR__.'/plugins.php';
 require __DIR__.'/domain-php.php';
+require __DIR__.'/ssl-retry.php';
 echo "\n$passed passed; $failed failed\n";
 unset($db); // Test DB is outside project and uniquely named; retained only if OS keeps a handle.
 @unlink($file); @unlink($file.'-wal'); @unlink($file.'-shm');

@@ -1,5 +1,5 @@
 {
-  "version": "0.2.20-preview",
+  "version": "0.2.21-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -18,8 +18,8 @@
     },
     {
       "path": "VERSION",
-      "bytes": 16,
-      "sha256": "6f7bdf2ee51a228e9574e13b60d257aad9dbb1d92cda4d65a8949cb9ba84684d"
+      "bytes": 15,
+      "sha256": "dfe782a77a385743015f6fbe02c88713412f7438aaf3d760dc8173bb2eceb9d4"
     },
     {
       "path": "agent/domain_php.py",
@@ -78,8 +78,8 @@
     },
     {
       "path": "app/Controllers/ApiController.php",
-      "bytes": 22462,
-      "sha256": "d6c03cc4293b8189a0a513a1ad6a8a529bd5a491e01e61dc04b6da96d493f787"
+      "bytes": 22593,
+      "sha256": "31e09285f1ce01b31285521686811af68fe0c3a88d8b0f9538169d8af024bf52"
     },
     {
       "path": "app/Helpers/Crypto.php",
@@ -183,8 +183,8 @@
     },
     {
       "path": "app/Services/ResourceService.php",
-      "bytes": 14524,
-      "sha256": "a12833be59117520bdce8e84c691805a7f478192adbc168615e3f3263cc6646f"
+      "bytes": 17392,
+      "sha256": "d4515461c11a835eecccf8f2d46059de5d8d249c8bdebc9e7ab8619d9a3e0370"
     },
     {
       "path": "app/Services/ServerService.php",
@@ -478,8 +478,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 51617,
-      "sha256": "c32c658a86349a042a100ec0069f0201931a79754a7299ddc80cbd588b311410"
+      "bytes": 52331,
+      "sha256": "20af821bd1598b8a1adfe07a580f577be7a27a754f5dd1d332a5845d9637ccf2"
     },
     {
       "path": "public/js/branding.js",

@@ -105,7 +105,10 @@ final class ResourceService
                     if($database['name']===$name||($config['username']??$database['name'])===$username) throw new HttpError(409,'Nome do banco ou usuário já utilizado. Escolha outro nome.');
                 }
                 $c=['name'=>$name,'username'=>$username]; $secret['password']=Input::password($d['password']??''); break;
-            case 'ssl_certificates': $name=$c['domain']; $c['email']=Input::email($d['email']??$owner['email']); break;
+            case 'ssl_certificates':
+                $name=$c['domain']; $c['email']=Input::email($d['email']??$owner['email']);
+                if($this->db->one('SELECT id,status FROM ssl_certificates WHERE server_id=? AND name=? AND deleted_at IS NULL',[$server,$name])) throw new HttpError(409,'Este certificado já está cadastrado. Se a emissão falhou, use Tentar novamente na lista.');
+                break;
             case 'ftp_accounts': $name='s'.$owner['id'].'_'.Input::identifier($d['name']??''); if(strlen($name)>30) throw new HttpError(422,'Nome de conta muito longo.'); $c['name']=$name; $secret['password']=Input::password($d['password']??''); break;
             case 'backups':
                 if(isset($d['schedule_id'])) {
@@ -132,6 +135,29 @@ final class ResourceService
             default: throw new HttpError(422,'Recurso inválido.');
         }
         return [$name,$c,$secret];
+    }
+    public function retrySsl(int $id): array {
+        $this->policy->require('ssl_certificates.create');
+        return $this->db->transaction(function() use($id) {
+            $this->db->lockTenant((int)$this->policy->user['tenant_id']);
+            $r=$this->find('ssl_certificates',$id);
+            if($r['status']!=='failed') throw new HttpError(409,'Só é possível tentar novamente uma emissão que falhou. Aguarde a operação atual terminar.');
+            $job=$this->db->one("SELECT operation,status FROM jobs WHERE tenant_id=? AND resource_type='ssl_certificates' AND resource_id=? ORDER BY id DESC LIMIT 1",[$r['tenant_id'],$id]);
+            if(!$job || $job['operation']!=='create_ssl' || $job['status']!=='failed') throw new HttpError(409,'Esta falha não é de emissão. Consulte a operação antes de tentar novamente.');
+            if($this->db->one("SELECT id FROM jobs WHERE tenant_id=? AND resource_type='ssl_certificates' AND resource_id=? AND status IN ('pending','running')",[$r['tenant_id'],$id])) throw new HttpError(409,'Já existe uma operação em andamento para este certificado.');
+            $owner=$this->policy->owner((int)$r['owner_id']);
+            $this->policy->server((int)$r['server_id']);
+            $this->policy->server((int)$r['server_id'],(int)$owner['id']);
+            $config=json_decode($r['config_json'],true,32,JSON_THROW_ON_ERROR);
+            $site=$this->find('websites',Input::integer($config['website_id']??null,'Site'));
+            if($site['status']!=='active' || (int)$site['owner_id']!==(int)$owner['id'] || (int)$site['server_id']!==(int)$r['server_id'] || $site['name']!==$r['name']) throw new HttpError(409,'O site deve estar ativo e manter o domínio e a conta deste certificado.');
+            $config=['website_id'=>(int)$site['id'],'domain'=>$site['name'],'email'=>Input::email($config['email']??$owner['email'])];
+            $payload=array_merge($config,['tenant_id'=>(int)$r['tenant_id'],'owner_id'=>(int)$r['owner_id'],'resource_id'=>$id]);
+            $jobId=(new Jobs($this->db))->enqueue($owner,(int)$r['server_id'],'create_ssl',$payload,'ssl_certificates',$id);
+            $this->db->query("UPDATE ssl_certificates SET status='pending',updated_at=? WHERE tenant_id=? AND id=?",[time(),$r['tenant_id'],$id]);
+            Audit::write($this->db,$this->policy->user,'ssl_certificates.retry',$r['name'],'queued');
+            return ['id'=>$id,'job_id'=>$jobId,'status'=>'pending','message'=>'Nova tentativa de emissão SSL adicionada à fila. Acompanhe em Operações.'];
+        });
     }
     public function delete(string $kind,int $id): array {
         $this->kind($kind); $this->policy->require("$kind.delete");

@@ -48,6 +48,7 @@ final class ApiController
                 return ['data'=>$data,'server_time'=>time(),'hours'=>$hours];
             }
         }
+        if(preg_match('#^/ssl_certificates/(\d+)/retry$#D',$path,$m) && $method==='POST') return $resources->retrySsl((int)$m[1]);
         if(preg_match('#^/([a-z_]+)(?:/(\d+))?$#D',$path,$m) && isset(Catalog::RESOURCES[$m[1]])) {
             $kind=$m[1]; $id=isset($m[2])?(int)$m[2]:null;
             if($method==='GET') { $this->policy->require("$kind.view"); return $id?['data'=>$resources->present($resources->find($kind,$id))]:['data'=>$resources->list($kind)]; }
