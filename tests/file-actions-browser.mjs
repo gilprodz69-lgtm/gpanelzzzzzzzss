@@ -13,6 +13,10 @@ try{
   await page.locator(`.fm-actions [data-fm=${action}]`).click();await page.locator('#modal input[name=target]').fill('dest');await page.locator('#modal button[type=submit]').click();await page.locator('#modal').waitFor({state:'hidden'});
   const sent=calls.find(c=>c.action===action+'_many');assert.deepEqual(sent.paths,['a.txt','b.txt']);assert.equal(sent.target,'dest');
  }
+ for(const name of ['a.txt','b.txt','folder'])await page.locator(`[data-entry="${name}"] [data-check]`).check();
+ await page.locator('.fm-actions [data-fm=zip]').click();assert.equal(await page.locator('#modal input[name=target]').inputValue(),'arquivos.zip');
+ await page.locator('#modal button[type=submit]').click();await page.locator('#modal').waitFor({state:'hidden'});
+ assert.deepEqual(calls.find(c=>c.action==='zip').paths,['a.txt','b.txt','folder']);assert.equal(calls.find(c=>c.action==='zip').target,'arquivos.zip');
  await page.locator('[data-entry="site.zip"]').click();await page.locator('.fm-actions [data-fm=unzip]').click();assert.equal(await page.locator('#modal input[name=target]').inputValue(),'');assert.equal(await page.locator('#modal input[name=overwrite]').isChecked(),false);
  await page.locator('[data-picker-folder=folder]').click();await page.locator('[data-picker-use]').click();assert.equal(await page.locator('#modal input[name=target]').inputValue(),'folder');await page.locator('[data-picker-root]').click();await page.locator('[data-picker-folder=folder]').waitFor();await page.locator('[data-picker-use]').click();assert.equal(await page.locator('#modal input[name=target]').inputValue(),'');await page.locator('#modal button[type=submit]').click();await page.locator('#modal').waitFor({state:'hidden'});assert(calls.some(c=>c.action==='unzip'&&c.target===''&&c.overwrite===false));
  for(const permanent of [false,true]){

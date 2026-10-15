@@ -5,7 +5,7 @@ import{domainColumns,domainDetails}from'./domains.js?v=0.2.18';
 import{hostingPage,bindHosting}from'./hosting.js?v=0.2.20';
 import{api,setCsrf,esc,number,date,badge,ApiError}from'./api.js';
 import{icon}from'./icons.js';
-import{fileManagerPage,bindFileManager}from'./file-manager.js';
+import{fileManagerPage,bindFileManager}from'./file-manager.js?v=0.2.22';
 import{renderDashboard,empty}from'./dashboard.js';
 import{creationForm,field,select}from'./forms.js?v=0.2.18';
 const root=document.querySelector('#app'),modal=document.querySelector('#modal');

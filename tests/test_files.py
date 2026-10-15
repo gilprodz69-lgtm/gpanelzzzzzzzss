@@ -51,6 +51,36 @@ class FileTests(unittest.TestCase):
         with self.assertRaises(Rejected):self.call('move_many',paths=['dest'],target='dest')
         with self.assertRaises(Rejected):self.call('delete_tree',path='')
         self.call('delete_tree',path='dest');self.assertFalse((self.root/'dest').exists())
+    def test_archive_multiple_files_and_folders(self):
+        (self.root/'content').mkdir()
+        (self.root/'content/empty').mkdir()
+        (self.root/'content/.env.example').write_text('example')
+        (self.root/'readme.txt').write_text('readme')
+        result=self.call('zip',paths=['readme.txt','content'],target='bundle.zip')
+        with zipfile.ZipFile(self.root/'bundle.zip') as archive:
+            self.assertEqual(set(archive.namelist()),{'readme.txt','content/','content/empty/','content/.env.example'})
+            self.assertEqual(archive.read('readme.txt'),b'readme')
+        self.assertIn('2 item',result['message'])
+        self.assertTrue((self.root/'readme.txt').exists())
+        self.assertEqual(list(self.root.glob('.vpm-zip-*')),[])
+
+    def test_archive_rejects_unsafe_selection_and_cleans_failure(self):
+        (self.root/'folder').mkdir();(self.root/'folder/a').write_text('a')
+        for names,target in [([], 'x.zip'),(['folder','folder/a'],'x.zip'),(['folder','folder'],'x.zip'),(['missing'],'x.zip'),(['../outside'],'x.zip'),(['folder'],'folder/x.zip')]:
+            with self.assertRaises(Rejected):self.call('zip',paths=names,target=target)
+            self.assertFalse((self.root/target).exists())
+        (self.root/'keep.zip').write_bytes(b'preserve')
+        with self.assertRaises(Rejected):self.call('zip',paths=['folder'],target='keep.zip')
+        self.assertEqual((self.root/'keep.zip').read_bytes(),b'preserve')
+        with patch('zipfile.ZipFile.write',side_effect=OSError('disk full')):
+            with self.assertRaises(OSError):self.call('zip',paths=['folder'],target='fail.zip')
+        self.assertFalse((self.root/'fail.zip').exists())
+        self.assertEqual(list(self.root.glob('.vpm-zip-*')),[])
+        try:(self.root/'link').symlink_to(self.root/'folder',target_is_directory=True)
+        except OSError:return
+        with self.assertRaises(Rejected):self.call('zip',paths=['link'],target='links.zip')
+        self.assertFalse((self.root/'links.zip').exists())
+
     def test_extract_current_folder_preserve_and_replace(self):
         (self.root/'keep.txt').write_text('original')
         with zipfile.ZipFile(self.root/'site.zip','w') as z:

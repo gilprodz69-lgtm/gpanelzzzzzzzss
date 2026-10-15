@@ -127,6 +127,16 @@ export function bindFileManager({showModal,modal,formShell,bindForm,toast}){
     finally{busy=false;$('#fm-site').disabled=false;progress('');}
    },name==='copy'?'Copiar':'Mover');return;
   }
+  if(name==='zip'){
+   if(bin)throw new Error('Restaure os itens antes de compactar.');
+   const items=keys();if(!items.length)throw new Error('Selecione arquivos ou pastas para compactar.');
+   const paths=items.map(r=>join(r.name)),target=items.length===1?paths[0]+'.zip':join('arquivos.zip');
+   prompt('Compactar arquivos',`<p>${items.length} item(ns) selecionado(s). Arquivos e pastas serão reunidos em um único ZIP.</p>${input('target','Caminho do ZIP relativo a public_html',target)}<p class="helper">O arquivo de destino não pode existir nem ficar dentro de uma pasta selecionada.</p>`,async v=>{
+    busy=true;$('#fm-site').disabled=true;progress(`Compactando ${items.length} item(ns)…`);
+    try{const result=await request('zip',{paths,target:v.target.trim()});toast(result.message);}
+    finally{busy=false;$('#fm-site').disabled=false;progress('');}
+   },'Compactar');return;
+  }
   const r=single(),source=join(r.name);
   if(name==='unzip'){
    if(r.directory||bin)throw new Error('Selecione um arquivo ZIP.');

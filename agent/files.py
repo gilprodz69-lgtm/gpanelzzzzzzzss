@@ -29,6 +29,8 @@ def operate(root, payload, private=None):
     action = choice(payload.get('action'), ['list', 'read', 'write', 'mkdir', 'delete', 'delete_tree', 'rename', 'copy', 'copy_many', 'move_many', 'zip', 'unzip', 'chmod', 'trash', 'trash_list', 'restore', 'purge', 'download', 'upload_begin', 'upload_chunk', 'upload_finish', 'upload_cancel', 'info'])
     if action in ['copy_many', 'move_many']:
         return transfer_many(root, payload)
+    if action == 'zip':
+        return create_archive(root, payload)
     if action in ['trash', 'trash_list', 'restore', 'purge', 'upload_begin', 'upload_chunk', 'upload_finish', 'upload_cancel']:
         if private is None:
             raise Rejected('Private file storage unavailable')
@@ -138,20 +140,48 @@ def operate(root, payload, private=None):
     elif action == 'chmod':
         mode = choice(payload.get('mode'), ['600', '640', '644', '700', '750', '755'])
         os.chmod(path, int(mode, 8), follow_symlinks=False)
-    elif action == 'zip':
-        target = inside(root, payload.get('target', ''))
-        if target.exists() or (path.is_dir() and target.is_relative_to(path)):
-            raise Rejected('Invalid archive destination')
-        candidates = bounded_tree(path)
-        with zipfile.ZipFile(target, 'x', zipfile.ZIP_DEFLATED) as archive:
-            for entry in candidates:
-                if entry.is_symlink():
-                    raise Rejected('Symbolic links cannot be archived')
-                if entry.is_file() or entry.is_dir():
-                    archive.write(entry, str(entry.relative_to(path.parent)))
     elif action == 'unzip':
         return extract_archive(root,path,payload)
     return {'message': 'Operation completed'}
+
+
+def create_archive(root, payload):
+    import tempfile
+    names = payload.get('paths', [payload.get('path', '')])
+    if not isinstance(names, list) or not names or len(names) > 1000 or any(not isinstance(n, str) for n in names):
+        raise Rejected('Selecione os arquivos e pastas para compactar')
+    sources = [inside(root, name) for name in names]
+    if len(set(sources)) != len(sources):
+        raise Rejected('Seleção duplicada')
+    target = inside(root, payload.get('target', ''))
+    if target.exists() or not target.parent.is_dir():
+        raise Rejected('O destino já existe ou a pasta de destino não existe')
+    base = Path(os.path.commonpath([str(source.parent) for source in sources]))
+    candidates = []
+    for source in sources:
+        if not source.exists() or not (source.is_file() or source.is_dir()):
+            raise Rejected('Origem não encontrada: ' + source.name)
+        if target.is_relative_to(source) or any(source != other and source.is_relative_to(other) for other in sources):
+            raise Rejected('O destino ou a seleção contém uma pasta de origem')
+        for entry in bounded_tree(source):
+            if entry.is_symlink() or not (entry.is_file() or entry.is_dir()):
+                raise Rejected('Symbolic links and special files cannot be archived')
+            candidates.append(entry)
+    descriptor, temp = tempfile.mkstemp(prefix='.vpm-zip-', dir=target.parent)
+    os.close(descriptor)
+    try:
+        with zipfile.ZipFile(temp, 'w', zipfile.ZIP_DEFLATED, compresslevel=3, strict_timestamps=False) as archive:
+            for entry in candidates:
+                # Recheck components before reading: a selected entry may have changed.
+                inside(root, entry.relative_to(root).as_posix())
+                if not (entry.is_file() or entry.is_dir()):
+                    raise Rejected('A origem mudou durante a compactação')
+                archive.write(entry, entry.relative_to(base).as_posix())
+        os.chmod(temp, 0o640)
+        os.link(temp, target)  # Publish only a complete archive; never overwrite.
+    finally:
+        os.unlink(temp)
+    return {'message': f'{len(sources)} item(ns) compactado(s).'}
 
 
 def transfer_many(root, payload):

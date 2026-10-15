@@ -1,5 +1,5 @@
 {
-  "version": "0.2.21-preview",
+  "version": "0.2.22-preview",
   "files": [
     {
       "path": ".dockerignore",
@@ -19,7 +19,7 @@
     {
       "path": "VERSION",
       "bytes": 15,
-      "sha256": "dfe782a77a385743015f6fbe02c88713412f7438aaf3d760dc8173bb2eceb9d4"
+      "sha256": "8495882940e35c522838fd465a3145338dba28c3bb8ccfb0cb78568a076e4b97"
     },
     {
       "path": "agent/domain_php.py",
@@ -28,8 +28,8 @@
     },
     {
       "path": "agent/files.py",
-      "bytes": 16212,
-      "sha256": "d06ba45b9981b6becdfec17f4729fdec135741ee8f988eae87136d74d0790a33"
+      "bytes": 17864,
+      "sha256": "22d82ba8cf53fdaf3197da14b63221395a408c5db08972300e1c514e21e24d2f"
     },
     {
       "path": "agent/operations.py",
@@ -478,8 +478,8 @@
     },
     {
       "path": "public/js/app.js",
-      "bytes": 52331,
-      "sha256": "20af821bd1598b8a1adfe07a580f577be7a27a754f5dd1d332a5845d9637ccf2"
+      "bytes": 52340,
+      "sha256": "1843c68ac89e1e6e5a1af503e62d977b32c1020afe3db8ee3aa7acc677a04ce6"
     },
     {
       "path": "public/js/branding.js",
@@ -508,8 +508,8 @@
     },
     {
       "path": "public/js/file-manager.js",
-      "bytes": 27592,
-      "sha256": "b5e435a7bd9d94899aa3b12a259ae527bc48f1e89b4fde2c1221aefc24ccc44f"
+      "bytes": 28489,
+      "sha256": "2948e3678f6c09b2c3e3d76d6a6239615707cc8c476fbcc5542353241a7240c4"
     },
     {
       "path": "public/js/forms.js",
